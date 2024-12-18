@@ -1434,7 +1434,7 @@ fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit) {
                 modifier = Modifier.padding(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                //cartro
+                //cartro ns
                 Column(
                     modifier = Modifier
                         .background(Color.White, shape = RoundedCornerShape(8.dp))
