@@ -13,21 +13,30 @@ interface CartroDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCartro(cartro: CartroEntity) : Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertCartronosuspend(cartro: CartroEntity) : Long
+
     @Query("SELECT * FROM cartrons")
     suspend fun getAllCartros(): List<CartroEntity>
 
+    @Query("SELECT * FROM cartrons")
+    fun getAllCartrosUn(): List<CartroEntity>
+
     @Delete
-    suspend fun deleteCartro(cartro: CartroEntity)
+    fun deleteCartro(cartro: CartroEntity)
 
     // Operaciones para partidas
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPartida(partida: PartidaEntity)
+    fun insertPartida(partida: PartidaEntity) : Long
 
     @Query("SELECT * FROM partides")
     suspend fun getAllPartides(): List<PartidaEntity>
 
+    @Query("SELECT * FROM partides")
+    fun getAllPartidesUn(): List<PartidaEntity>
+
     @Delete
-    suspend fun deletePartida(partida: PartidaEntity)
+    fun deletePartida(partida: PartidaEntity)
 
     // Operaciones para el estado de los cartones
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -46,5 +55,5 @@ interface CartroDao {
     suspend fun getPartidaById(partidaId: Int): PartidaEntity?
 
     @Update
-    suspend fun updatePartida(partida: PartidaEntity)
+    fun updatePartida(partida: PartidaEntity)
 }

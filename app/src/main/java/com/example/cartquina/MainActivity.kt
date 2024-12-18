@@ -2,7 +2,11 @@ package com.example.cartquina
 
 import android.content.Context
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.ImageButton
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -50,7 +54,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Clear
@@ -59,11 +68,15 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.Executors
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,7 +121,6 @@ fun AppNavigation() {
 
     }
 }
-
 
 @Composable
 fun HomeScreen( navController: NavController) {
@@ -228,8 +240,6 @@ fun HomeScreen( navController: NavController) {
                 println("Opció seleccionada: $option")
                 if (option == "AMB BOLES") {
                     showPartidesOptions = true
-
-
                     //navController.navigate("game") // Navegar a la pantalla del joc
                 }
                 showGameOptions = false
@@ -262,7 +272,9 @@ fun HomeScreen( navController: NavController) {
             onCrearPartida = {
                 // Lógica para crear una nueva partida
                 println("Crear nueva partida")
-                navController.navigate("game/new")
+                createNewGame(navController, database)
+                //val partidanova = createNewGame(navController, database)
+               // navController.navigate("game/new")
             },
             partidas = partidas
         )
@@ -270,82 +282,143 @@ fun HomeScreen( navController: NavController) {
 }
 
 @Composable
-fun PartidaOptionsDialog(
-    onDismiss: () -> Unit,
-    onPartidaSelected: (PartidaEntity) -> Unit, // Callback para cargar una partida
-    onCrearPartida: () -> Unit, // Callback para crear una nueva partida
-    partidas: List<PartidaEntity> // Lista de partidas existentes
-) {
+fun PartidaOptionsDialog(onDismiss: () -> Unit, onPartidaSelected: (PartidaEntity) -> Unit, onCrearPartida:   () -> Unit, partidas: List<PartidaEntity>) {
+    val gradientColors = listOf(
+        listOf(Color(0xFFBBDEFB), Color(0xFF2196F3)), // Gradient 1
+        listOf(Color(0xFFE91E63), Color(0xFFFFC107)), // Gradient 2
+        listOf(Color(0xFF4CAF50), Color(0xFF00BCD4)), // Gradient 3
+        // Add more gradient color pairs as needed
+    )
+
+    val gradientcol = listOf(Color(0xFFBBDEFB), Color(0xFF65B1EE),Color(0xFF2196F3),Color(0xFF65B1EE),Color(0xFFBBDEFB)) // Gradient 1
+
+
     AlertDialog(
-        onDismissRequest = { onDismiss() },
-        title = { Text(text = "Selecciona una opció") },
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        title = {
+            Text(
+                text = "Selecciona una opció",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF2196F3)
+            )
+        },
         text = {
-            Column {
-                Button(
-                    onClick = { onCrearPartida() }, // Crear nueva partida
-                    modifier = Modifier.fillMaxWidth()
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Botó per crear nova partida amb "+" i contorn marcat
+                TextButton(
+                    onClick = { /*onCrearPartida()*/onCrearPartida() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, shape = RoundedCornerShape(8.dp))
+                        .border(2.dp, Color(0xFF2196F3), shape = RoundedCornerShape(8.dp))
+                        .padding(vertical = 8.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF2196F3))
                 ) {
-                    Text("Crear Nova Partida")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Afegir nova partida",
+                            tint = Color(0xFF2196F3)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Crear Nova Partida")
+                    }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
 
                 if (partidas.isEmpty()) {
+                    // Missatge si no hi ha partides
                     Text(
                         text = "No hi ha partides guardades.",
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(8.dp),
+                        color = Color.Gray,
+                        modifier = Modifier.padding(vertical = 16.dp),
                         textAlign = TextAlign.Center
                     )
                 } else {
+                    // Llista de partides existents amb scroll
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp) // Puedes ajustar el tamaño de la lista
+                            .height(300.dp) // Defineix l'alçada del scroll
                     ) {
                         items(partidas) { partida ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
-                                    .clickable { onPartidaSelected(partida) },
-                                //elevation = 2.dp
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(8.dp)
+                                val gradientIndex =
+                                    partidas.indexOf(partida) % gradientColors.size // Get index and cycle through colors
+                                val currentGradientColors = gradientColors[gradientIndex]
+
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                        .border(
+                                            2.dp,
+                                            Color(0xFF2196F3),
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .clickable { onPartidaSelected(partida) }
+                                        .shadow(2.dp, RoundedCornerShape(8.dp)),
+                                    shape = RoundedCornerShape(8.dp)
                                 ) {
-                                    Text(
-                                        text = "Partida: ${partida.id}",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    Text(
-                                        text = "Data: ${partida.data}",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                    Text(
-                                        text = "Estat: ${partida.estat}",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                    Text(
-                                        text = "Numeros cantats: ${partida.numerosDit.size}",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .background(
+                                                brush = Brush.sweepGradient(
+                                                    colors = gradientcol
+                                                )
+                                            )
+                                            .fillMaxSize()
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(16.dp)
+                                        ) {
+                                            Text(
+                                                text = "Partida: ${partida.id}",
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.DarkGray
+                                                )
+                                            )
+                                            Text(
+                                                text = "Data: ${partida.data}",
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    color = Color.White
+                                                )
+                                            )
+                                            Text(
+                                                text = "Estat: ${partida.estat}",
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    color = Color.White
+                                                )
+                                            )
+                                            Text(
+                                                text = "Cartrons: ${partida.cartronsAsignats.size}",
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    color = Color.White
+                                                )
+                                            )
+                                            Text(
+                                                text = "Numeros cantats: ${partida.numerosDit.size}",
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    color = Color.White
+                                                )
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
                 }
             }
         },
-        confirmButton = {
-            Button(onClick = { onDismiss() }) {
-                Text("Cancelar")
-            }
-        }
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
     )
 }
 
-
-  fun loadGameToScreen(partida: PartidaEntity,database: AppDatabase,navController: NavController,partidaViewModel: PartidaViewModel) {
+fun loadGameToScreen(partida: PartidaEntity,database: AppDatabase,navController: NavController,partidaViewModel: PartidaViewModel) {
     val cartones = partida.cartronsAsignats.map { cartroId ->
         database.cartroDao().getCartroEstat(cartroId)
     }
@@ -356,69 +429,7 @@ fun PartidaOptionsDialog(
     navController.navigate("game")
 }
 
-/*suspend fun loadGameToScreen(partida: PartidaEntity, database: AppDatabase, navController: NavController) {
-    // Aquí deberías cargar los cartones asignados y los números llamados para la partida
-
-    // Cargar los cartones de la partida
-    val cartones = partida.cartronsAsignats.map { cartroId ->
-        database.cartroDao().getCartroEstat(cartroId)  // Cargar el estado de cada cartón
-    }
-
-    // Cargar los números llamados
-    val numerosLlamados = partida.numerosDit
-
-    // Navegar a la pantalla del juego pasando los datos
-    navController.navigate("game") {
-        // Pasa los datos de la partida como argumentos, por ejemplo:
-      //   arguments = bundleOf("cartones" to cartones, "numerosLlamados" to numerosLlamados)
-    }
-}*/
-
-
-/*@Composable
-fun loadSavedGame(navController: NavController, database: AppDatabase) {
-    // Cargar las partidas guardadas de la base de datos
-    val partidesGuardades = remember { mutableStateListOf<PartidaEntity>() }
-
-    LaunchedEffect(key1 = Unit) { // key1 triggers the effect only once
-        partidesGuardades.addAll(database.cartroDao().getAllPartides())
-    }
-    //val partidesGuardades = database.cartroDao().getAllPartides()
-
-    // Mostrar un listado con las partidas guardadas
-    // Puedes usar LazyColumn para mostrar las partidas guardadas y permitir la selección
-    // Después de seleccionar una partida, navegas a la pantalla del juego con los datos de esa partida
-
-    if (partidesGuardades.isNotEmpty()) {
-        // Mostrar las partidas y permitir al usuario seleccionar una
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(partidesGuardades) { partida ->
-                Card(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)) {
-                    Column(modifier = Modifier.padding(8.dp)) {
-                        Text("Partida: ${partida.data}")
-                        Text("Estado: ${partida.estat}")
-                        Button(onClick = {
-                            // Cargar esta partida y navegar al GameScreen
-                            // Puedes cargar los cartones y los números llamados
-                            loadGameToScreen(partida,  database,navController, partidaViewModel = PartidaViewModel())
-                        }) {
-                            Text("Cargar Partida")
-                        }
-                    }
-                }
-            }
-        }
-    } else {
-        // Si no hay partidas guardadas, muestra un mensaje
-        Text("No tienes partidas guardadas.")
-    }
-}*/
-
-
-@Composable
-fun createNewGame(navController: NavController, database: AppDatabase) {
+ fun createNewGame(navController: NavController, database: AppDatabase) {
     // Crear un nuevo objeto de partida
     val currentDateTime = LocalDateTime.now() // Obtiene la fecha y hora actual
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss") // Define el formato
@@ -431,90 +442,21 @@ fun createNewGame(navController: NavController, database: AppDatabase) {
         cartronsAsignats = listOf() // No asignamos cartones aún
     )
 
-    // Insertar la nueva partida en la base de datos
-    LaunchedEffect(Unit) {
-        database.cartroDao().insertPartida(newPartida)
-    }
+    Log.d("CREAR NOVA PARTIDA",newPartida.toString())
 
-    // Navegar a la pantalla del juego
-    navController.navigate("game") // Cambiar "game" por el nombre de la ruta del GameScreen
+
+         // Crear nueva partida
+         val executor = Executors.newSingleThreadExecutor()
+         executor.execute {
+             val idpartida = database.cartroDao().insertPartida(newPartida)
+             Log.d("CREAR NOVA PARTIDA ID", idpartida.toString())
+
+             // Navegar al nuevo juego después de crear la partida
+             Handler(Looper.getMainLooper()).post {
+                 navController.navigate("game/${idpartida}")
+             }
+         }
 }
-
-/*@Composable
-fun GameOptionsDialog(
-    onDismiss: () -> Unit,
-    onOptionSelected: (String) -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {},
-        title = {
-            Text(
-                text = "Selecciona el tipus de joc",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = Color(0xFF2196F3)
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(
-                    onClick = { onOptionSelected("AMB BOLES") },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("AMB BOLES")
-                }
-                TextButton(
-                    onClick = { onOptionSelected("INDIVIDUAL SENSE BOLES") },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("INDIVIDUAL SENSE BOLES")
-                }
-                TextButton(
-                    onClick = { onOptionSelected("MULTIPLE SENSE BOLES") },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("MULTIPLE SENSE BOLES")
-                }
-            }
-        },
-        containerColor = Color.White,
-        shape = RoundedCornerShape(16.dp)
-    )
-}*/
-
-/*@Composable
-fun PartidaOptionsDialog(
-    onDismiss: () -> Unit,
-    onOptionSelected: (String) -> Unit
-){
-    AlertDialog(
-        onDismissRequest = { onDismiss() },
-        title = { Text(text = "Selecciona una opción") },
-        text = {
-            Column {
-                Button(
-                    onClick = { onOptionSelected("Crear Nueva") },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Crear Nueva Partida")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { onOptionSelected("Cargar Antigua") },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Cargar Partida Antigua")
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onDismiss() }) {
-                Text("Cancelar")
-            }
-        }
-    )
-}*/
-
 
 @Composable
 fun PartidesGuardadesScreen(navController: NavController) {
@@ -522,27 +464,230 @@ fun PartidesGuardadesScreen(navController: NavController) {
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
 
-    // Cargar las partidas de la base de datos
+    // Cargar las partidas de la base de datos usando LaunchedEffect
     LaunchedEffect(Unit) {
         partides.value = database.cartroDao().getAllPartides()
     }
 
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(partides.value) { partida ->
-            Card(modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)) {
-                Column(modifier = Modifier.padding(8.dp)) {
-                    Text(text = "Partida: ${partida.data}")
-                    Text(text = "Estado: ${partida.estat}")
-                    Text(text = "Números llamados: ${partida.numerosDit.joinToString(", ")}")
-                    Button(onClick = {
-                        // Eliminar la partida
-                        /*LaunchedEffect(Unit) {
-                            database.cartroDao().deletePartida(partida)
-                        }*/
-                    }) {
-                        Text("Eliminar Partida")
+    // Función para eliminar una partida y recargar la lista
+    fun eliminarPartida(partida: PartidaEntity) {
+        val executor = Executors.newSingleThreadExecutor()
+        executor.execute {
+            database.cartroDao().deletePartida(partida)
+            // Recargar la lista de partidas después de eliminar
+            // Lanzar una coroutine para cargar las partidas de nuevo
+            // Usamos LaunchedEffect para actualizar la UI de manera adecuada.
+            partides.value = database.cartroDao().getAllPartidesUn() // Esto también necesita estar dentro de un contexto suspendido
+        }
+    }
+
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFFBBDEFB), Color(0xFF2196F3)) // Gradient blau
+                )
+            ),
+        contentAlignment = Alignment.TopCenter
+    ) {
+
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .background(Color.White),
+                horizontalArrangement = Arrangement.Absolute.Left,
+                verticalAlignment = Alignment.CenterVertically // Alinear verticalment
+            ) {
+                //PER recular
+                IconButton(onClick = {
+                    navController.navigate("home")
+                }) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Menu")
+                }
+
+
+                Text(
+                    text = "          Partides Guardades",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.W500),
+                    color = Color.Black
+                )
+            }
+
+            // Pantalla con lista de partidas
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(partides.value) { partida ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .clip(RoundedCornerShape(16.dp)) // Vores arrodonides
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        Color(0xFFBBDEFB),
+                                        Color(0xFF2196F3)
+                                    )
+                                )
+                            )
+                            .shadow(4.dp, RoundedCornerShape(16.dp))
+                            .border(
+                                2.dp,
+                                Color(0xFF000000),
+                                shape = RoundedCornerShape(16.dp)
+                            ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(
+                                            Color(0xFF93BDE0),
+                                            Color(0xFF97C4E8),
+
+                                            Color(0xFFD7E5F1)
+                                        )
+                                    )
+                                )
+                                .fillMaxSize()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                // Datos de la partida
+                                Row (
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center
+                                ){
+                                    Text(
+                                        text = "Partida: ${partida.id}",
+                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                        color = Color(0xFF1f77be),
+                                        textAlign = TextAlign.Center
+
+                                    )
+                                }
+
+
+                                // Línea debajo del título
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Divider(color = Color.Black, thickness = 1.dp)
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Fila con "Data" a la izquierda y su valor a la derecha
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    // Data
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "Data: ",
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp)) // Espacio entre el texto y el valor
+                                        Text(
+                                            text = partida.data,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+
+                                    // Estat
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "Estat: ",
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp)) // Espacio entre el texto y el valor
+                                        Text(
+                                            text = partida.estat,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+
+
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Absolute.Left
+                                ) {
+                                    Text(
+                                        text = "Cartrons assignats: ",
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = partida.cartronsAsignats.joinToString(", "),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = "Números dits: ",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = if (partida.numerosDit.isEmpty()) {
+                                        "No s'han cantat números"
+                                    } else {
+                                        partida.numerosDit.joinToString(", ")
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                // Botón para eliminar la partida con un diseño atractivo
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Row (
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Absolute.Right
+                                ) {
+
+                                    IconButton(onClick = {     }){
+                                        Icon(
+                                            imageVector = Icons.Filled.Info, // Icona d'eliminar
+                                            contentDescription = "Editar partida",
+                                            tint = Color(0xFF2C5CA4)
+                                        )
+                                    }
+
+                                    IconButton(onClick = { eliminarPartida(partida) }) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Delete, // Icona d'eliminar
+                                            contentDescription = "Eliminar partida",
+                                            tint = Color(0xFFA1342D)
+                                        )
+                                    }
+                                }
+
+
+                                /*Button(
+                                    onClick = { eliminarPartida(partida) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                ) {
+                                    Text(text = "Eliminar Partida", color = MaterialTheme.colorScheme.onError)
+                                }*/
+                            }
+                        }
+
                     }
                 }
             }
@@ -556,27 +701,338 @@ fun CartroListScreen(navController: NavController) {
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
 
+    var modificarcartro by remember { mutableStateOf(false) }
+    var noucartro by remember { mutableStateOf(false) }
+
+
+
     // Cargar los cartones
     LaunchedEffect(Unit) {
         cartros.value = database.cartroDao().getAllCartros()
     }
 
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(cartros.value) { cartro ->
-            Card(modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)) {
-                Column(modifier = Modifier.padding(8.dp)) {
-                    Text(text = "Cartón ID: ${cartro.id}")
-                    Button(onClick = {
-                        // Eliminar cartón
-                        /*LaunchedEffect(Unit) {
-                            database.cartroDao().deleteCartro(cartro)
-                        }*/
-                    }) {
-                        Text("Eliminar Cartón")
+
+    fun eliminarCartro(cartro: CartroEntity) {
+        val executor = Executors.newSingleThreadExecutor()
+        executor.execute {
+            database.cartroDao().deleteCartro(cartro)
+            cartros.value = database.cartroDao().getAllCartrosUn()
+        }
+    }
+
+    if (noucartro) {
+        AddCartroDialog(
+            onDismiss = { noucartro = false },
+            onSave = { numbers ->
+
+                val executor = Executors.newSingleThreadExecutor()
+                executor.execute {
+
+                    val cartro = CartroEntity(numeros = numbers)
+                    val newCartroId: Int = database.cartroDao().insertCartronosuspend(cartro).toInt()
+                    cartros.value = database.cartroDao().getAllCartrosUn()
+                    noucartro = false
+
+                    Log.d("NOU CARTRO CREAT",newCartroId.toString())
+
+                }
+            }
+        )
+    }
+
+    if (modificarcartro) {
+        /*AddCartroDialog(
+            onDismiss = { modificarcartro = false },
+            onSave = { numbers ->
+                // Desa el cartró a la base de dades
+                scope.launch {
+                    val cartro = CartroEntity(numeros = numbers)
+
+                    val newCartroId: Int = database.cartroDao().insertCartro(cartro).toInt()
+                    println("Cartró guardat a la base de dades amb ID: $newCartroId")
+
+                    // Agregar el ID del cartón a la partida actual
+                    partida?.let { currentPartida ->
+                        val updatedCartons = currentPartida.cartronsAsignats.toMutableList()
+                        updatedCartons.add(newCartroId.toInt()) // Si realmente necesitas convertirlo
+
+                        val updatedPartida = currentPartida.copy(cartronsAsignats = updatedCartons)
+                        database.cartroDao().updatePartida(updatedPartida)
+
+                        println("Cartró associat a la partida actual amb ID: $newCartroId")
+                    }
+
+                    modificarcartro = false
+                }
+            }
+        )*/
+    }
+
+//*******************************************************************************************************
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFFBBDEFB), Color(0xFF2196F3)) // Gradient blau
+                )
+            ),
+        contentAlignment = Alignment.TopCenter
+    ) {
+
+        Column {
+
+            //Header
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp).background(Color.White),horizontalArrangement = Arrangement.Absolute.Left,
+                verticalAlignment = Alignment.CenterVertically // Alinear verticalment
+            ) {
+                //PER recular
+                IconButton(onClick = {
+                    navController.navigate("home")
+                }) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Menu")
+                }
+
+                Text(
+                    text = "             Cartrons Guardats",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.W500),
+                    color = Color.Black
+                )
+            }
+
+
+            Row (
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.Absolute.Right
+            ) {
+                TextButton(
+                    onClick = {  noucartro = true  },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, shape = RoundedCornerShape(8.dp))
+                        .border(2.dp, Color(0xFF2196F3), shape = RoundedCornerShape(8.dp))
+                        .padding(12.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF2196F3))
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Afegir nou cartro",
+                            tint = Color(0xFF2196F3)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Crear un nou Cartró",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 20.sp),
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
+            }
+
+
+            // Llista de cartrons
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(cartros.value) { cartro ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .clip(RoundedCornerShape(16.dp)) // Vores arrodonides
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        Color(0xFFBBDEFB),
+                                        Color(0xFF2196F3)
+                                    )
+                                )
+                            )
+                            .shadow(4.dp, RoundedCornerShape(16.dp))
+                            .border(
+                                2.dp,
+                                Color(0xFF000000),
+                                shape = RoundedCornerShape(16.dp)
+                            ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(
+                                            Color(0xFF93BDE0),
+                                            Color(0xFF97C4E8),
+                                            Color(0xFFD7E5F1)
+                                        )
+                                    )
+                                )
+                                .fillMaxSize()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                // Datos de la partida
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 6.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically // Centra verticalmente los elementos
+                                ) {
+                                    // Texto a la izquierda
+                                    Text(
+                                        text = "Cartró ${cartro.id}",
+                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                        color = Color(0xFF1f77be),
+                                        modifier = Modifier.weight(1f), // Hace que el texto ocupe el espacio disponible a la izquierda
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis // Manejo elegante si el texto es demasiado largo
+                                    )
+
+                                    // Iconos a la derecha
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp), // Espacio entre iconos
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        IconButton(onClick = {
+                                            modificarcartro = true
+                                        }) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Edit, // Icono de editar
+                                                contentDescription = "Editar cartro",
+                                                tint = Color(0xFF1A9A20)
+                                            )
+                                        }
+                                        IconButton(onClick = { eliminarCartro(cartro) }) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Delete, // Icono de eliminar
+                                                contentDescription = "Eliminar cartro",
+                                                tint = Color(0xFFA1342D)
+                                            )
+                                        }
+                                    }
+                                }
+
+
+                                // Línea debajo del título
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Divider(color = Color.Black, thickness = 1.dp)
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                VeureCartro(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    numbers = cartro.numeros
+                                )
+
+                                // Botón para eliminar la partida con un diseño atractivo
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun VeureCartro(modifier: Modifier = Modifier, numbers: List<Int?>) {
+    // Colores de las columnas, basados en el bingo tradicional
+    val columnColors = listOf(
+        Color(0xFFFFCDD2), // Rosa
+        Color(0xFFFFF59D), // Amarillo
+        Color(0xFFA5D6A7), // Verde
+        Color(0xFF90CAF9), // Azul
+        Color(0xFFCE93D8)  // Lila
+    )
+
+    // Estructura del cartón
+    Column(
+        modifier = modifier
+            .background(Color.White, shape = RoundedCornerShape(8.dp))
+            .border(BorderStroke(2.dp, Color.Black), shape = RoundedCornerShape(8.dp))
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        repeat(3) { rowIndex -> // 3 filas
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                repeat(9) { columnIndex -> // 9 columnas
+                    val index = rowIndex * 9 + columnIndex
+                    val number = numbers.getOrNull(index)
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .background(
+                                color = if (number == null) Color.Gray else columnColors[columnIndex % columnColors.size],
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .border(
+                                BorderStroke(2.dp, Color.Black),
+                                shape = RoundedCornerShape(4.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = when {
+                                number == null -> "⭐"
+                                else -> number.toString()
+                            },
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 16.sp,
+                                fontWeight =  FontWeight.Bold,
+                                color =Color.Black,
+                                textDecoration = TextDecoration.None
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CustomToast(message: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize() // Ocupar toda la pantalla
+            .padding(16.dp),
+        contentAlignment = Alignment.BottomCenter // Alinear el contenido en la parte inferior central
+    ) {
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = Color(0xFF323232),
+            contentColor = Color.White,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color.Green,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
             }
         }
     }
@@ -588,12 +1044,31 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     val cartones = partida?.cartronsAsignats //llista dels cartrons assignats
     val numerosLlamados = partida?.numerosDit
 
+
+   // val numerosSeleccionados = remember { mutableStateListOf<Int>() }
+
+    val numerosSeleccionados = remember { partida?.numerosDit?.toMutableStateList() ?: mutableStateListOf<Int>()}
+    var guardarPartida by remember { mutableStateOf(false) }
+    var guardarPartidaToast by remember { mutableStateOf(false) }
+
     var gameMode by remember { mutableStateOf("Línia") } //posar estat de la partida
     var expandedMenu by remember { mutableStateOf(false) }  // Controla l'obertura del menú
     var showAddCartroDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope() // Per gestionar les corrutines
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
+
+
+    val cartroList = remember { mutableStateListOf<List<Int?>>() }
+    if (partida != null) {
+        LaunchedEffect(partida.id) {
+            // Cargar los cartones de la base de datos
+            val cartones = loadCartonesDePartida(partida.id, context)
+            if (cartones != null) {
+                cartroList.addAll(cartones)
+            }  // Agregar los cartones a la lista
+        }
+    }
 
     if (partida != null) {
         Log.d("AAAAAAAAAAAAAArasi",partida.id.toString())
@@ -602,6 +1077,8 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     } else {
         Log.d("AAAAAAAAAAAAAArasi","NULL")
     }
+
+
 
     Box(
         modifier = Modifier
@@ -620,15 +1097,19 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 verticalAlignment = Alignment.CenterVertically // Alinear verticalment
             ) {
                 //PER recular
-                IconButton(onClick = { navController.navigate("home") }) {
+                IconButton(onClick = {
+                    guardarPartida=true
+                    //showSavedGameToast(context)
+                    navController.navigate("home")
+                }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Menu")
                 }
 
                 Text(
-                    text = "    Partida " + partida?.id + "   " + partida?.data,
+                    text = "  Partida " + partida?.id + "   " + partida?.data,
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontWeight = FontWeight.W100,
-                        fontSize = 26.sp,
+                        fontSize = 24.sp,
                         color = Color(0xFF374C60)
                     )
                 )
@@ -679,8 +1160,9 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                             DropdownMenuItem(
                                 text = {Text(text = "GUARDAR PARTIDA")},
                                 onClick = {
-                                    println("GUARDAR Partida seleccionat")
-                                    // Aquí pots gestionar l'acció per acabar la partida
+                                    // Guardar la partida con los números seleccionados
+
+                                    guardarPartida = true
                                     expandedMenu = false
                                 },
                                 leadingIcon = {
@@ -698,7 +1180,9 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                                 onClick = {
                                     println("Acabar Partida seleccionat")
                                     // Aquí pots gestionar l'acció per acabar la partida
+                                    guardarPartida = true
                                     expandedMenu = false
+                                    navController.navigate("home")
                                 },
                                 leadingIcon = {
                                     Icon(
@@ -730,55 +1214,56 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 }
             }
 
-            /*Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp)
-            ) {
-                // Cada fila té 10 boletes
-                for (rowIndex in 0 until 9) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly // Espai igual entre boletes
-                    ) {
-                        for (columnIndex in 0 until 10) {
-                            val ballNumber = rowIndex * 10 + columnIndex + 1 // Numeració de 1 a 90
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp) // Ajustem la mida de les boletes
-                                    .background(Color(0xFFF5F5DC), shape = RoundedCornerShape(50)) // Beige clar
-                                    .border(2.dp, Color.Black, shape = RoundedCornerShape(50)) // Contorn negre
-                                    .padding(6.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = ballNumber.toString(),
-                                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.Black, fontWeight = FontWeight.Bold) // Text negre
-                                )
-                            }
-                        }
-                    }
-                }
-            }*/
+
+
+            //Boles
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp)
             ) {
-                // Cada fila té 10 boletes
                 for (rowIndex in 0 until 9) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly // Espai igual entre boletes
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         for (columnIndex in 0 until 10) {
-                            val ballNumber = rowIndex * 10 + columnIndex + 1 // Numeració de 1 a 90
+                            val ballNumber = rowIndex * 10 + columnIndex + 1
+
                             Ball(
-                                ballNumber = ballNumber
+                                ballNumber = ballNumber,
+                                numerosSeleccionados = numerosSeleccionados,
+                                onBallClicked = { selectedNumber ->
+                                    if (numerosSeleccionados.contains(selectedNumber)) {
+                                        // Si el número ya está seleccionado, quitarlo de la lista
+                                        numerosSeleccionados.remove(selectedNumber)
+
+                                        // Restaurar los números en los cartones
+                                        for (cartro in cartroList) {
+                                            cartro.forEachIndexed { index, numero ->
+                                                if (numero == -selectedNumber) {
+                                                    cartroList[cartroList.indexOf(cartro)] =
+                                                        cartro.toMutableList().apply { set(index, selectedNumber) }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        // Si no está seleccionado, añadirlo a la lista
+                                        numerosSeleccionados.add(selectedNumber)
+
+                                        // Marcar el número como tachado en los cartones
+                                        for (cartro in cartroList) {
+                                            cartro.forEachIndexed { index, numero ->
+                                                if (numero == selectedNumber) {
+                                                    cartroList[cartroList.indexOf(cartro)] =
+                                                        cartro.toMutableList().apply { set(index, -numero!!) }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
@@ -801,24 +1286,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 )
             }
 
-            //CARTRONS
-           /* val cartroList = remember {
-                listOf(
-                    listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, null, null, null, null, null, null, null, null, null, null, null),
-                    listOf(16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, null, null, null, null, null, null, null, null, null, null, null),
-                    listOf(31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, null, null, null, null, null, null, null, null, null, null, null)
-                )
-            }
-
-            val cartroList = remember { mutableStateListOf<List<Int?>>() }
-
-            // Función para obtener los cartones desde la base de datos
-            LaunchedEffect(Unit) {
-                val database = DatabaseInstance.getDatabase(context)
-                val cartros = database.cartroDao().getAllCartros()
-                cartroList.addAll(cartros.map { it.numeros })
-            }*/
-
             /*
             el de boles:
             va per partides. a cada partida guarda una nota, la data, els numeros que s'han dit , si es va per quina o per linia, i cartrons assignats a la partida. a mes, per a cada cartro sap quins numeros s'han tatxat i quins no
@@ -826,20 +1293,11 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
             un boto a inici per a veure parides guardades, i es mostra quins numeros s'han dit, i lestat dels cartrons. sense poder modificar, nomes eliminar
             un llistat de cartrons tambe, que es puguin modificar, eliminar i afegir. han de tenir un nom tambe
 
+            es guarda la partida en tornar enrere per boto, en donarli a acabar partida, i en guardar partida
 
             els altres no guarda a la base de dades la partida, nomes es crea un cartro o sen carrega un o multiples. i es tatxa en aquell moment individualment
              */
 
-            val cartroList = remember { mutableStateListOf<List<Int?>>() }
-            if (partida != null) {
-                LaunchedEffect(partida.id) {
-                    // Cargar los cartones de la base de datos
-                    val cartones = loadCartonesDePartida(partida.id, context)
-                    if (cartones != null) {
-                        cartroList.addAll(cartones)
-                    }  // Agregar los cartones a la lista
-                }
-            }
             // Mostrar la lista de cartones
             if (cartroList.isEmpty()) {
                 // Si no hay cartones asignados, mostrar un mensaje
@@ -852,25 +1310,45 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                     textAlign = TextAlign.Center
                 )
             } else {
-                CartroList(cartroList = cartroList) // Si hay cartones, mostrar la lista
+                CartroList(cartroList = cartroList,numerosSeleccionados) // Si hay cartones, mostrar la lista
             }
-
-            // Scroll de cartrons
-            /*LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-            ) {
-                items(3) { // Exemples amb 3 cartrons
-                    Cartro(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    )
-                }
-            }*/
         }
     }
+
+    if (guardarPartida) {
+        val updatedPartida = partida?.copy(
+            numerosDit = numerosSeleccionados,
+            estat = gameMode // Cambiar el estado si es necesario
+        ) ?: partida?.let {
+            PartidaEntity(
+                data = partida?.data ?: "", // Usar la fecha de la partida existente
+                numerosDit = numerosSeleccionados,
+                estat = gameMode, // Estado inicial
+                cartronsAsignats = it.cartronsAsignats // Los cartones asignados
+            )
+        }
+        val executor = Executors.newSingleThreadExecutor()
+        executor.execute {
+            if (updatedPartida != null) {
+                database.cartroDao().updatePartida(updatedPartida)
+                Log.d("AAAAAGUUUUARDDDADAAA",updatedPartida.id.toString())
+            }
+
+        }
+
+        guardarPartidaToast = true
+        guardarPartida = false
+    }
+
+    if (guardarPartidaToast) {
+        CustomToast(message = "Partida guardada correctament 🎉")
+        LaunchedEffect(Unit) {
+            delay(3000) // Mostrar el Toast durante 2 segundos
+            guardarPartidaToast = false
+        }
+
+    }
+
     if (showAddCartroDialog) {
         AddCartroDialog(
             onDismiss = { showAddCartroDialog = false },
@@ -878,10 +1356,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 // Desa el cartró a la base de dades
                 scope.launch {
                     val cartro = CartroEntity(numeros = numbers)
-
-
-                    // Guardar cartón en la base de datos y obtener su ID como Long
-                    //val newCartroIdlong: Long = database.cartroDao().insertCartro(cartro)
 
                     val newCartroId: Int = database.cartroDao().insertCartro(cartro).toInt()
                     println("Cartró guardat a la base de dades amb ID: $newCartroId")
@@ -898,7 +1372,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                     }
 
                     showAddCartroDialog = false
-
                 }
             }
         )
@@ -906,22 +1379,23 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
 }
 
 @Composable
-fun CartroList(cartroList: List<List<Int?>>) {
+fun CartroList(cartroList: List<List<Int?>>, numerosSeleccionados: MutableList<Int>) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-
     ) {
         items(cartroList) { cartroNumbers ->
             Cartro(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
-                numbers = cartroNumbers
+                numbers = cartroNumbers,
+                numerosSeleccionados = numerosSeleccionados
             )
         }
     }
 }
+
 suspend fun loadCartonesDePartida(partidaId: Int, context: Context): List<List<Int?>>? {
     val database = DatabaseInstance.getDatabase(context)
     val partida = database.cartroDao().getPartidaById(partidaId)  // Obtiene la partida por ID
@@ -935,12 +1409,19 @@ suspend fun loadCartonesDePartida(partidaId: Int, context: Context): List<List<I
     return cartroList
 }
 
-
 @Composable
-fun AddCartroDialog(
-    onDismiss: () -> Unit,
-    onSave: (List<Int?>) -> Unit
-) {
+fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit) {
+
+    val columnColors = listOf(
+        Color(0xFFFFCDD2), // Rosa
+        Color(0xFFFFF59D), // Amarillo
+        Color(0xFFA5D6A7), // Verde
+        Color(0xFF90CAF9), // Azul
+        Color(0xFFCE93D8)  // Lila
+    )
+
+
+    //*************************************************************************************************************************************************
     val cartroNumbers = remember { mutableStateListOf<Int?>().apply { addAll(List(27) { null }) } }
     var showInputDialog by remember { mutableStateOf(false) }
     var selectedIndex by remember { mutableStateOf(-1) }
@@ -950,18 +1431,20 @@ fun AddCartroDialog(
         title = { Text("Crea el teu cartró") },
         text = {
             Column(
-                modifier = Modifier.padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                //cartro
                 Column(
                     modifier = Modifier
                         .background(Color.White, shape = RoundedCornerShape(8.dp))
                         .border(BorderStroke(2.dp, Color.Black), shape = RoundedCornerShape(8.dp))
-                        .padding(8.dp)
+                        .padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     repeat(3) { rowIndex ->
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             repeat(9) { columnIndex ->
@@ -971,13 +1454,12 @@ fun AddCartroDialog(
                                         .weight(1f)
                                         .aspectRatio(1f)
                                         .background(
-                                            color = if (cartroNumbers[index] != null) Color(
-                                                0xFFFFF9C4
-                                            ) else Color(0xFFF0F0F0),
+                                            color = if (cartroNumbers[index] != null) columnColors[columnIndex % columnColors.size]
+                                             else Color.Gray,
                                             shape = RoundedCornerShape(4.dp)
                                         )
                                         .border(
-                                            BorderStroke(1.dp, Color.Black),
+                                            BorderStroke(2.dp, Color.Black),
                                             shape = RoundedCornerShape(4.dp)
                                         )
                                         .clickable {
@@ -988,7 +1470,12 @@ fun AddCartroDialog(
                                 ) {
                                     Text(
                                         text = cartroNumbers[index]?.toString() ?: "⭐",
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp),
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color =Color.Black,
+                                            textDecoration = TextDecoration.None
+                                        ),
                                         textAlign = TextAlign.Center
                                     )
                                 }
@@ -1054,53 +1541,48 @@ fun AddCartroDialog(
     }
 }
 
-
 @Composable
-fun Ball(ballNumber: Int) {
-    var isSelected by remember { mutableStateOf(false) } // Estat de selecció
+fun Ball(ballNumber: Int, numerosSeleccionados: MutableList<Int>, onBallClicked: (Int) -> Unit) {
+    val isSelected = remember { derivedStateOf { numerosSeleccionados.contains(ballNumber) } }
 
     Box(
         modifier = Modifier
-            .size(32.dp) // Mida de les boletes
+            .size(32.dp)
             .background(
-                if (isSelected) Color.Black else Color(0xFFF5F5DC), // Fons negre quan seleccionada, beige clar en cas contrari
+                if (isSelected.value) Color.Black else Color(0xFFF5F5DC), // Fondo negro si está seleccionado
                 shape = RoundedCornerShape(50)
             )
             .border(
                 2.dp,
-                if (isSelected) Color.Gray else Color.Black, // Contorn gris quan seleccionada, negre per defecte
+                if (isSelected.value) Color.Gray else Color.Black, // Borde gris si está seleccionado
                 shape = RoundedCornerShape(50)
             )
             .padding(6.dp)
-            .clickable { isSelected = !isSelected }, // Canvia estat quan es fa clic
+            .clickable { onBallClicked(ballNumber) }, // Llama a la función pasada
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = ballNumber.toString(),
             style = MaterialTheme.typography.bodyMedium.copy(
-                color = if (isSelected) Color.White else Color.Black, // Text blanc quan seleccionada, negre per defecte
+                color = if (isSelected.value) Color.White else Color.Black, // Texto blanco si está seleccionado
                 fontWeight = FontWeight.Bold
             )
         )
     }
 }
 
-
 @Composable
-fun Cartro(
-    modifier: Modifier = Modifier,
-    numbers: List<Int?> // Lista de números que representa el cartón
-) {
-    // Colors per columnes, basat en els colors típics del bingo
+fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSeleccionados: MutableList<Int>) {
+    // Colores de las columnas, basados en el bingo tradicional
     val columnColors = listOf(
         Color(0xFFFFCDD2), // Rosa
-        Color(0xFFFFF59D), // Groc
-        Color(0xFFA5D6A7), // Verd
-        Color(0xFF90CAF9), // Blau
+        Color(0xFFFFF59D), // Amarillo
+        Color(0xFFA5D6A7), // Verde
+        Color(0xFF90CAF9), // Azul
         Color(0xFFCE93D8)  // Lila
     )
 
-    // Estructura del cartró
+    // Estructura del cartón
     Column(
         modifier = modifier
             .background(Color.White, shape = RoundedCornerShape(8.dp))
@@ -1108,22 +1590,24 @@ fun Cartro(
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        repeat(3) { rowIndex -> // 3 files
+        repeat(3) { rowIndex -> // 3 filas
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                repeat(9) { columnIndex -> // 9 columnes
+                repeat(9) { columnIndex -> // 9 columnas
                     val index = rowIndex * 9 + columnIndex
-                    val number = numbers.getOrNull(index) // Obtiene el número si existe
+                    val number = numbers.getOrNull(index) // Obtiene el número o `null` si es una casilla vacía
+                    val isTachado = number != null && numerosSeleccionados.contains(number) //&& number < 0 // Identificar números tachados
+
                     Box(
                         modifier = Modifier
-                            .weight(1f) // Totes les cel·les tenen la mateixa amplada
-                            .aspectRatio(1f) // Quadrat perfecte
+                            .weight(1f) // Todas las celdas tienen el mismo ancho
+                            .aspectRatio(1f) // Mantener proporción cuadrada
                             .background(
-                                color = if (number != null) columnColors[columnIndex % columnColors.size] else Color.Gray,
+                                color = if (number == null) Color.Gray else columnColors[columnIndex % columnColors.size],
                                 shape = RoundedCornerShape(4.dp)
                             )
                             .border(
@@ -1133,10 +1617,16 @@ fun Cartro(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = number?.toString() ?: "⭐", // Si el número no es null, muestra el número
+                            text = when {
+                                number == null -> "⭐" // Casillas vacías con estrella
+                                isTachado -> "${-number}" // Mostrar número tachado como positivo
+                                else -> number.toString() // Mostrar número normal
+                            },
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = if (isTachado) FontWeight.ExtraBold else FontWeight.Bold,
+                                color = if (isTachado) Color.Red else Color.Black, // Diferenciar con color rojo
+                                textDecoration = if (isTachado) TextDecoration.LineThrough else TextDecoration.None // Línea tachada
                             ),
                             textAlign = TextAlign.Center
                         )
@@ -1147,13 +1637,8 @@ fun Cartro(
     }
 }
 
-
-
 @Composable
-fun GameOptionsDialog(
-    onDismiss: () -> Unit,
-    onOptionSelected: (String) -> Unit
-) {
+fun GameOptionsDialog(onDismiss: () -> Unit, onOptionSelected: (String) -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {},

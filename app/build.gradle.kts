@@ -62,7 +62,8 @@ dependencies {
     implementation(libs.androidx.material3)
 
     // Room
-    implementation(libs.androidx.room.runtime.v251) // Reemplaza con la última versión estable
+    implementation(libs.androidx.room.runtime.v251)
+    implementation(libs.androidx.compose.material3) // Reemplaza con la última versión estable
     kapt("androidx.room:room-compiler:2.6.1") // Procesador de anotaciones para Room
     implementation(libs.androidx.room.ktx.v251) // Extensiones de Kotlin para Room
     implementation( libs.androidx.room.runtime)
@@ -93,6 +94,7 @@ dependencies {
     //kapt(libs.hilt.compiler) // Procesador de anotaciones para Hilt
     implementation(libs.androidx.hilt.navigation.compose)
 
+    //implementation ("com.github.GrenderG:Toasty:1.5.2")
 
 
     // Lifecycle y ViewModel

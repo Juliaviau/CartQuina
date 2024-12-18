@@ -9,3 +9,4 @@ import androidx.room.TypeConverters
 abstract class AppDatabase : RoomDatabase() {
     abstract fun cartroDao(): CartroDao
 }
+
