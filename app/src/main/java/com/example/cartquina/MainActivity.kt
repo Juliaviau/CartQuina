@@ -1051,11 +1051,12 @@ fun CustomToast(message: String) {
 @Composable
 fun GameScreen(navController: NavController, partida: PartidaEntity?) {
 
-    //var cartones = partida?.cartronsAsignats //llista dels cartrons assignats
-    val numerosLlamados = partida?.numerosDit
+    //var cartons = partida?.cartronsAsignats
+    val cartronsPartidaId = remember {
+        partida?.cartronsAsignats?.toMutableStateList() ?: mutableStateListOf()
+    }
 
-    var cartonesPartidaId = partida?.cartronsAsignats
-   // val numerosSeleccionados = remember { mutableStateListOf<Int>() }
+    // val numerosSeleccionados = remember { mutableStateListOf<Int>() }
 
     val numerosSeleccionados = remember { partida?.numerosDit?.toMutableStateList() ?: mutableStateListOf<Int>()}
     var guardarPartida by remember { mutableStateOf(false) }
@@ -1339,7 +1340,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
             val updatedPartida = currentPartida.copy(
                 numerosDit = numerosSeleccionados,
                 estat = gameMode.toString(),
-                cartronsAsignats = currentPartida.cartronsAsignats
+                cartronsAsignats = cartronsPartidaId.toList()
             )
 
             scope.launch(Dispatchers.IO) { // Assegura't d'usar Dispatcher.IO per a operacions de base de dades
@@ -1349,12 +1350,11 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                     Log.d("GUARDAR", "Estat: ${gameMode.toString()}")
                     Log.d("GUARDAR", "Cartrons assignats: ${currentPartida.cartronsAsignats}")
                     Log.d("GUARDAR", "Cartrons assignats updated: ${updatedPartida.cartronsAsignats}")
-                    Log.d("GUARDAR", "Cartrons assignats cartolist: ${cartonesPartidaId}")
+                    Log.d("GUARDAR", "Cartrons assignats cartolist: ${cartronsPartidaId}")
 
 
-                    cartonesPartidaId?.let { partida.copy(estat = gameMode.toString(), numerosDit = numerosSeleccionados, cartronsAsignats = cartonesPartidaId!!) }
-                        ?.let { database.cartroDao().updatePartida(it) } // Guarda la partida
-                    withContext(Dispatchers.Main) { // Torna al Main Thread per a la UI
+                    database.cartroDao().updatePartida(updatedPartida)
+                    withContext(Dispatchers.Main) {
                         guardarPartidaToast = true
                         guardarPartida = false
                     }
@@ -1366,32 +1366,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     }
 
 
-    /*if (guardarPartida) {
 
-        if (partida != null) {
-            Log.d("GUARDARPARTIDA",partida.cartronsAsignats.toString())
-        }
-
-        val updatedPartidar = partida?.copy(
-            numerosDit = numerosSeleccionados,
-            estat = gameMode.toString() // Cambiar el estado si es necesario
-        ) ?: partida?.let {
-            PartidaEntity(
-                data = partida?.data ?: "", // Usar la fecha de la partida existente
-                numerosDit = numerosSeleccionados,
-                estat = gameMode.toString(), // Estado inicial
-                cartronsAsignats = it.cartronsAsignats // Los cartones asignados
-            )
-        }
-        val executors = Executors.newSingleThreadExecutor()
-        executors.execute {
-            if (updatedPartidar != null) {
-                database.cartroDao().updatePartida(updatedPartidar)
-                Log.d("AAAAAGUUUUARDDDADAAA",updatedPartidar.id.toString())
-                guardarPartidaToast = true
-                guardarPartida = false
-            }
-        }*/
 
         //*******************************************************************************************
         /*val updatedPartida = gameMode?.let {
@@ -1452,6 +1427,36 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
         AddCartroDialog(
             onDismiss = { mostrarCrearCartroNou = false },
             onSave = { numbers ->
+                scope.launch(Dispatchers.IO) {
+                    val cartro = CartroEntity(numeros = numbers)
+                    val newCartroId = database.cartroDao().insertCartro(cartro).toInt()
+
+                    withContext(Dispatchers.Main) {
+                        // Añadir el nuevo ID a la lista mutable
+                        cartronsPartidaId.add(newCartroId)
+
+                        // Actualizar la partida con los nuevos IDs de cartones
+                        partida?.let { currentPartida ->
+                            val updatedPartida = currentPartida.copy(cartronsAsignats = cartronsPartidaId.toList())
+                            scope.launch(Dispatchers.IO) {
+                                database.cartroDao().updatePartida(updatedPartida)
+                            }
+                        }
+
+                        // Actualizar la UI
+                        cartroList.add(cartro.numeros)
+                        mostrarCrearCartroNou = false
+                    }
+                }
+            }
+        )
+    }
+
+
+    /*if (mostrarCrearCartroNou) {
+        AddCartroDialog(
+            onDismiss = { mostrarCrearCartroNou = false },
+            onSave = { numbers ->
                 scope.launch {
                     val cartro = CartroEntity(numeros = numbers)
                     val newCartroId: Int = database.cartroDao().insertCartro(cartro).toInt()
@@ -1483,7 +1488,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
             }
 
         )
-    }
+    }*/
 
     if (mostrarCarregarCartroExistent) {
         mostrarCarregarCartroExistent = false
