@@ -8,7 +8,8 @@
 - veure partida guardada
 - interficie escollir partida creada
 - reiniciar
-- en afegir cartro, opcio d'afegirhi un cartró existent o de crear-ne un
+- FET - en afegir cartro, opcio d'afegirhi un cartró existent o de crear-ne un
 - logo i nom
 - Animacio en fer linia o fer quina
 - Anotar quants de quants numeros s'han dit i quans en falten a cada cartró
+- tatxar els numeros del cartro millor

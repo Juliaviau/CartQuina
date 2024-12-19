@@ -1069,7 +1069,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     var mostrarCarregarCartroExistent by remember { mutableStateOf(false) }
     var mostrarCrearCartroNou by remember { mutableStateOf(false) }
 
-
     val scope = rememberCoroutineScope() // Per gestionar les corrutines
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
@@ -1088,16 +1087,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
             }  // Agregar los cartones a la lista
         }
     }
-
-    /*if (partida != null) {
-        Log.d("AAAAAAAAAAAAAArasi",partida.id.toString())
-        gameMode = partida.estat
-
-    } else {
-        Log.d("AAAAAAAAAAAAAArasi","NULL")
-    }*/
-
-
 
     Box(
         modifier = Modifier
@@ -1365,9 +1354,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
         }
     }
 
-
-
-
         //*******************************************************************************************
         /*val updatedPartida = gameMode?.let {
             partida?.copy(
@@ -1453,47 +1439,152 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     }
 
 
-    /*if (mostrarCrearCartroNou) {
-        AddCartroDialog(
-            onDismiss = { mostrarCrearCartroNou = false },
-            onSave = { numbers ->
-                scope.launch {
-                    val cartro = CartroEntity(numeros = numbers)
-                    val newCartroId: Int = database.cartroDao().insertCartro(cartro).toInt()
+    if (mostrarCarregarCartroExistent) {
+        AddCartroExistentDialog(
+            onDismiss = { mostrarCarregarCartroExistent = false },
+            onSave = { idsCartronsSeleccionats, numerosCartronsSeleccionats ->
+                scope.launch(Dispatchers.IO) {
+                    Log.d("CARTRONS EXISTENTS SELECCIONATS", idsCartronsSeleccionats.toString())
+                    Log.d("NÚMEROS CARTRONS SELECCIONATS", numerosCartronsSeleccionats.toString())
 
-                    partida?.let { currentPartida ->
+                    withContext(Dispatchers.Main) {
+                        // Afegir els IDs seleccionats a cartronsPartidaId
+                        cartronsPartidaId.addAll(idsCartronsSeleccionats)
 
-                        val executors = Executors.newSingleThreadExecutor()
-                        executors.execute {
-                            val updatedCartons = currentPartida.cartronsAsignats.toMutableList()
-                            updatedCartons.add(newCartroId)
-
-
-                            // Actualitza `partida` amb els nous cartrons
-                            val updatedPartida = currentPartida.copy(cartronsAsignats = updatedCartons)
-                            database.cartroDao().updatePartida(updatedPartida)
-
-                            // Actualitza `cartroList` per reflectir els nous cartrons
-                            cartroList.add(cartro.numeros)
-                            Log.d("AAAAAAAAAAAAAA",updatedCartons.toString() + "  N " + newCartroId)
-
-                            cartonesPartidaId = updatedCartons
-                            Log.d("AAAAAAAAAAAAAA", "  N " + newCartroId)
-
-                            mostrarCrearCartroNou = false
+                        // Actualitzar la partida amb els nous IDs
+                        partida?.let { currentPartida ->
+                            val updatedPartida = currentPartida.copy(cartronsAsignats = cartronsPartidaId.toList())
+                            scope.launch(Dispatchers.IO) {
+                                database.cartroDao().updatePartida(updatedPartida)
+                            }
                         }
 
+                        // Afegir les llistes de números seleccionats a cartroList
+                        cartroList.addAll(numerosCartronsSeleccionats)
+
+                        // Tanca el diàleg
+                        mostrarCarregarCartroExistent = false
                     }
                 }
             }
-
         )
-    }*/
 
-    if (mostrarCarregarCartroExistent) {
-        mostrarCarregarCartroExistent = false
+
+
+
+
     }
 }
+
+@Composable
+fun AddCartroExistentDialog(
+    onDismiss: () -> Unit,
+    onSave: (List<Int>, List<List<Int?>>) -> Unit // Retorna dues llistes
+) {
+    val selectedCartros = remember { mutableStateOf(mutableSetOf<Int>()) }
+    val selectedNumbers = remember { mutableStateListOf<List<Int?>>() } // Llista de números seleccionats
+    val cartros = remember { mutableStateOf<List<CartroEntity>>(emptyList()) }
+    val context = LocalContext.current
+    val database = DatabaseInstance.getDatabase(context)
+
+    // Carreguem els cartrons de la base de dades
+    LaunchedEffect(Unit) {
+        cartros.value = database.cartroDao().getAllCartros()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Escull un cartró", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)) },
+        text = {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(cartros.value) { cartro ->
+                    val isSelected = selectedCartros.value.contains(cartro.id)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(
+                                width = if (isSelected) 2.dp else 0.dp,
+                                color = if (isSelected) Color.Black else Color.Transparent,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .clickable {
+                                selectedCartros.value = selectedCartros.value.toMutableSet().apply {
+                                    if (isSelected) {
+                                        remove(cartro.id)
+                                        selectedNumbers.remove(cartro.numeros) // Elimina els números
+                                    } else {
+                                        add(cartro.id)
+                                        selectedNumbers.add(cartro.numeros) // Afegeix els números
+                                    }
+                                }
+                            },
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(Color(0xFFBBDEFB), Color(0xFF2196F3))
+                                    )
+                                )
+                                .padding(8.dp)
+                        ) {
+                            Column {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Cartró ${cartro.id}",
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    )
+                                }
+                                VeureCartro(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    numbers = cartro.numeros
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val ids = selectedCartros.value.toList()
+                val numbers = selectedNumbers.toList()
+                onSave(ids, numbers) // Retorna les dues llistes
+                onDismiss()
+            }) {
+                Text("Confirmar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel·lar")
+            }
+        }
+    )
+}
+
+
+
+
+
+
 
 @Composable
 fun OpcionsAfegirCartro(onDismiss: () -> Unit, onOptionSelected: (String) -> Unit) {
