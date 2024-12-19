@@ -5,8 +5,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.widget.ImageButton
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -71,9 +69,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.Executors
@@ -697,20 +697,26 @@ fun PartidesGuardadesScreen(navController: NavController) {
 
 @Composable
 fun CartroListScreen(navController: NavController) {
+
     val cartros = remember { mutableStateOf<List<CartroEntity>>(emptyList()) }
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
 
+    var cartroToEdit: List<Int?>? by remember { mutableStateOf(null) }
+
+   // val cartroAEditar = C
+
+    val cartroSeleccionat = remember { mutableStateOf<CartroEntity?>(null) }
+
+    var cartroAEditar = remember { mutableStateOf<CartroEntity?>(null) }
+    //var cartroAEditar: List<Int?>? by remember { mutableStateOf(null) }
     var modificarcartro by remember { mutableStateOf(false) }
     var noucartro by remember { mutableStateOf(false) }
-
-
 
     // Cargar los cartones
     LaunchedEffect(Unit) {
         cartros.value = database.cartroDao().getAllCartros()
     }
-
 
     fun eliminarCartro(cartro: CartroEntity) {
         val executor = Executors.newSingleThreadExecutor()
@@ -724,48 +730,43 @@ fun CartroListScreen(navController: NavController) {
         AddCartroDialog(
             onDismiss = { noucartro = false },
             onSave = { numbers ->
-
                 val executor = Executors.newSingleThreadExecutor()
                 executor.execute {
-
                     val cartro = CartroEntity(numeros = numbers)
                     val newCartroId: Int = database.cartroDao().insertCartronosuspend(cartro).toInt()
                     cartros.value = database.cartroDao().getAllCartrosUn()
                     noucartro = false
 
                     Log.d("NOU CARTRO CREAT",newCartroId.toString())
-
                 }
             }
         )
     }
 
     if (modificarcartro) {
-        /*AddCartroDialog(
+        AddCartroDialog(
             onDismiss = { modificarcartro = false },
             onSave = { numbers ->
-                // Desa el cartró a la base de dades
-                scope.launch {
-                    val cartro = CartroEntity(numeros = numbers)
+                cartroSeleccionat.value = cartroSeleccionat.value?.copy(numeros = numbers)
 
-                    val newCartroId: Int = database.cartroDao().insertCartro(cartro).toInt()
-                    println("Cartró guardat a la base de dades amb ID: $newCartroId")
+                val executor = Executors.newSingleThreadExecutor()
+                executor.execute {
 
-                    // Agregar el ID del cartón a la partida actual
-                    partida?.let { currentPartida ->
-                        val updatedCartons = currentPartida.cartronsAsignats.toMutableList()
-                        updatedCartons.add(newCartroId.toInt()) // Si realmente necesitas convertirlo
+                    database.cartroDao().updateCartro(cartroSeleccionat.value!!)
 
-                        val updatedPartida = currentPartida.copy(cartronsAsignats = updatedCartons)
-                        database.cartroDao().updatePartida(updatedPartida)
 
-                        println("Cartró associat a la partida actual amb ID: $newCartroId")
-                    }
 
+
+                    //val cartro = CartroEntity(numeros = numbers)
+                    //val newCartroId: Int = database.cartroDao().insertCartronosuspend(cartro).toInt()
+                    cartros.value = database.cartroDao().getAllCartrosUn()
                     modificarcartro = false
+
+                    Log.d(" CARTRO ACTUALITZAT",cartroSeleccionat.value!!.id.toString())
                 }
-            }
-        )*/
+            },
+            cartro = cartroSeleccionat.value!!.numeros
+        )
     }
 
 //*******************************************************************************************************
@@ -785,7 +786,10 @@ fun CartroListScreen(navController: NavController) {
 
             //Header
             Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp).background(Color.White),horizontalArrangement = Arrangement.Absolute.Left,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .background(Color.White),horizontalArrangement = Arrangement.Absolute.Left,
                 verticalAlignment = Alignment.CenterVertically // Alinear verticalment
             ) {
                 //PER recular
@@ -804,7 +808,9 @@ fun CartroListScreen(navController: NavController) {
 
 
             Row (
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.Absolute.Right
             ) {
                 TextButton(
@@ -895,6 +901,10 @@ fun CartroListScreen(navController: NavController) {
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         IconButton(onClick = {
+                                            //cartroToEdit = cartro.numeros
+                                            cartroSeleccionat.value = cartro
+                                            //cartroAEditar = cartro
+                                            Log.d("CARTRO EDITAR",cartro.id.toString() + cartroSeleccionat.value!!.id.toString())
                                             modificarcartro = true
                                         }) {
                                             Icon(
@@ -1041,42 +1051,50 @@ fun CustomToast(message: String) {
 @Composable
 fun GameScreen(navController: NavController, partida: PartidaEntity?) {
 
-    val cartones = partida?.cartronsAsignats //llista dels cartrons assignats
+    //var cartones = partida?.cartronsAsignats //llista dels cartrons assignats
     val numerosLlamados = partida?.numerosDit
 
-
+    var cartonesPartidaId = partida?.cartronsAsignats
    // val numerosSeleccionados = remember { mutableStateListOf<Int>() }
 
     val numerosSeleccionados = remember { partida?.numerosDit?.toMutableStateList() ?: mutableStateListOf<Int>()}
     var guardarPartida by remember { mutableStateOf(false) }
     var guardarPartidaToast by remember { mutableStateOf(false) }
 
-    var gameMode by remember { mutableStateOf("Línia") } //posar estat de la partida
+    var gameMode by remember { mutableStateOf(if (partida?.estat?.isEmpty() == true) {"Linia"} else {partida?.estat})} //posar estat de la partida
     var expandedMenu by remember { mutableStateOf(false) }  // Controla l'obertura del menú
     var showAddCartroDialog by remember { mutableStateOf(false) }
+
+    var mostrarCarregarCartroExistent by remember { mutableStateOf(false) }
+    var mostrarCrearCartroNou by remember { mutableStateOf(false) }
+
+
     val scope = rememberCoroutineScope() // Per gestionar les corrutines
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
 
-
     val cartroList = remember { mutableStateListOf<List<Int?>>() }
+
     if (partida != null) {
         LaunchedEffect(partida.id) {
             // Cargar los cartones de la base de datos
+
+
             val cartones = loadCartonesDePartida(partida.id, context)
             if (cartones != null) {
+                cartroList.clear()
                 cartroList.addAll(cartones)
             }  // Agregar los cartones a la lista
         }
     }
 
-    if (partida != null) {
+    /*if (partida != null) {
         Log.d("AAAAAAAAAAAAAArasi",partida.id.toString())
         gameMode = partida.estat
 
     } else {
         Log.d("AAAAAAAAAAAAAArasi","NULL")
-    }
+    }*/
 
 
 
@@ -1315,17 +1333,81 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
         }
     }
 
+
     if (guardarPartida) {
-        val updatedPartida = partida?.copy(
+        partida?.let { currentPartida ->
+            val updatedPartida = currentPartida.copy(
+                numerosDit = numerosSeleccionados,
+                estat = gameMode.toString(),
+                cartronsAsignats = currentPartida.cartronsAsignats
+            )
+
+            scope.launch(Dispatchers.IO) { // Assegura't d'usar Dispatcher.IO per a operacions de base de dades
+                try {
+                    Log.d("GUARDAR", "Actualitzant partida amb ID: ${updatedPartida.id}")
+                    Log.d("GUARDAR", "Números dits: ${numerosSeleccionados}")
+                    Log.d("GUARDAR", "Estat: ${gameMode.toString()}")
+                    Log.d("GUARDAR", "Cartrons assignats: ${currentPartida.cartronsAsignats}")
+                    Log.d("GUARDAR", "Cartrons assignats updated: ${updatedPartida.cartronsAsignats}")
+                    Log.d("GUARDAR", "Cartrons assignats cartolist: ${cartonesPartidaId}")
+
+
+                    cartonesPartidaId?.let { partida.copy(estat = gameMode.toString(), numerosDit = numerosSeleccionados, cartronsAsignats = cartonesPartidaId!!) }
+                        ?.let { database.cartroDao().updatePartida(it) } // Guarda la partida
+                    withContext(Dispatchers.Main) { // Torna al Main Thread per a la UI
+                        guardarPartidaToast = true
+                        guardarPartida = false
+                    }
+                } catch (e: Exception) {
+                    Log.e("ERROR", "Error guardant la partida: ${e.message}")
+                }
+            }
+        }
+    }
+
+
+    /*if (guardarPartida) {
+
+        if (partida != null) {
+            Log.d("GUARDARPARTIDA",partida.cartronsAsignats.toString())
+        }
+
+        val updatedPartidar = partida?.copy(
             numerosDit = numerosSeleccionados,
-            estat = gameMode // Cambiar el estado si es necesario
+            estat = gameMode.toString() // Cambiar el estado si es necesario
         ) ?: partida?.let {
             PartidaEntity(
                 data = partida?.data ?: "", // Usar la fecha de la partida existente
                 numerosDit = numerosSeleccionados,
-                estat = gameMode, // Estado inicial
+                estat = gameMode.toString(), // Estado inicial
                 cartronsAsignats = it.cartronsAsignats // Los cartones asignados
             )
+        }
+        val executors = Executors.newSingleThreadExecutor()
+        executors.execute {
+            if (updatedPartidar != null) {
+                database.cartroDao().updatePartida(updatedPartidar)
+                Log.d("AAAAAGUUUUARDDDADAAA",updatedPartidar.id.toString())
+                guardarPartidaToast = true
+                guardarPartida = false
+            }
+        }*/
+
+        //*******************************************************************************************
+        /*val updatedPartida = gameMode?.let {
+            partida?.copy(
+                numerosDit = numerosSeleccionados,
+                estat = it // Cambiar el estado si es necesario
+            )
+        } ?: partida?.let {
+            gameMode?.let { it1 ->
+                PartidaEntity(
+                    data = partida?.data ?: "", // Usar la fecha de la partida existente
+                    numerosDit = numerosSeleccionados,
+                    estat = it1, // Estado inicial
+                    cartronsAsignats = it.cartronsAsignats // Los cartones asignados
+                )
+            }
         }
         val executor = Executors.newSingleThreadExecutor()
         executor.execute {
@@ -1337,8 +1419,8 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
         }
 
         guardarPartidaToast = true
-        guardarPartida = false
-    }
+        guardarPartida = false*/
+  //  }
 
     if (guardarPartidaToast) {
         CustomToast(message = "Partida guardada correctament 🎉")
@@ -1350,32 +1432,118 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     }
 
     if (showAddCartroDialog) {
-        AddCartroDialog(
+        OpcionsAfegirCartro (
             onDismiss = { showAddCartroDialog = false },
-            onSave = { numbers ->
-                // Desa el cartró a la base de dades
-                scope.launch {
-                    val cartro = CartroEntity(numeros = numbers)
+            onOptionSelected = { option ->
+                // Accions en seleccionar una opció
+                println("Opció seleccionada: $option")
 
-                    val newCartroId: Int = database.cartroDao().insertCartro(cartro).toInt()
-                    println("Cartró guardat a la base de dades amb ID: $newCartroId")
-
-                    // Agregar el ID del cartón a la partida actual
-                    partida?.let { currentPartida ->
-                        val updatedCartons = currentPartida.cartronsAsignats.toMutableList()
-                        updatedCartons.add(newCartroId.toInt()) // Si realmente necesitas convertirlo
-
-                        val updatedPartida = currentPartida.copy(cartronsAsignats = updatedCartons)
-                        database.cartroDao().updatePartida(updatedPartida)
-
-                        println("Cartró associat a la partida actual amb ID: $newCartroId")
-                    }
-
-                    showAddCartroDialog = false
+                if (option == "CREAR UN CARTRÓ NOU") {
+                    mostrarCrearCartroNou = true
+                } else if (option == "CARREGAR UN CARTRÓ EXISTENT") {
+                    mostrarCarregarCartroExistent = true
                 }
+                showAddCartroDialog = false
             }
         )
     }
+
+    if (mostrarCrearCartroNou) {
+        AddCartroDialog(
+            onDismiss = { mostrarCrearCartroNou = false },
+            onSave = { numbers ->
+                scope.launch {
+                    val cartro = CartroEntity(numeros = numbers)
+                    val newCartroId: Int = database.cartroDao().insertCartro(cartro).toInt()
+
+                    partida?.let { currentPartida ->
+
+                        val executors = Executors.newSingleThreadExecutor()
+                        executors.execute {
+                            val updatedCartons = currentPartida.cartronsAsignats.toMutableList()
+                            updatedCartons.add(newCartroId)
+
+
+                            // Actualitza `partida` amb els nous cartrons
+                            val updatedPartida = currentPartida.copy(cartronsAsignats = updatedCartons)
+                            database.cartroDao().updatePartida(updatedPartida)
+
+                            // Actualitza `cartroList` per reflectir els nous cartrons
+                            cartroList.add(cartro.numeros)
+                            Log.d("AAAAAAAAAAAAAA",updatedCartons.toString() + "  N " + newCartroId)
+
+                            cartonesPartidaId = updatedCartons
+                            Log.d("AAAAAAAAAAAAAA", "  N " + newCartroId)
+
+                            mostrarCrearCartroNou = false
+                        }
+
+                    }
+                }
+            }
+
+        )
+    }
+
+    if (mostrarCarregarCartroExistent) {
+        mostrarCarregarCartroExistent = false
+    }
+}
+
+@Composable
+fun OpcionsAfegirCartro(onDismiss: () -> Unit, onOptionSelected: (String) -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        title = {
+            Text(
+                text = "Selecciona una opció",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF2196F3)
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Opció 1: Crear un cartro
+                TextButton(
+                    onClick = { onOptionSelected("CREAR UN CARTRÓ NOU") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFBBDEFB), shape = RoundedCornerShape(8.dp))
+                        .padding(vertical = 8.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
+                ) {
+                    Text("CREAR UN CARTRÓ NOU")
+                }
+
+                // Opció 2: Carregar un cartro existent
+                TextButton(
+                    onClick = { onOptionSelected("CARREGAR UN CARTRÓ EXISTENT") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF90CAF9), shape = RoundedCornerShape(8.dp))
+                        .padding(vertical = 8.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
+                ) {
+                    Text("CARREGAR UN CARTRÓ EXISTENT")
+                }
+
+                // Opció 3:
+                /*TextButton(
+                    onClick = { onOptionSelected("MULTIPLE SENSE BOLES") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF64B5F6), shape = RoundedCornerShape(8.dp))
+                        .padding(vertical = 8.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
+                ) {
+                    Text("MULTIPLE SENSE BOLES")
+                }*/
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
 }
 
 @Composable
@@ -1410,7 +1578,7 @@ suspend fun loadCartonesDePartida(partidaId: Int, context: Context): List<List<I
 }
 
 @Composable
-fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit) {
+fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit, cartro: List<Int?>? = null) {
 
     val columnColors = listOf(
         Color(0xFFFFCDD2), // Rosa
@@ -1420,9 +1588,16 @@ fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit) {
         Color(0xFFCE93D8)  // Lila
     )
 
-
     //*************************************************************************************************************************************************
-    val cartroNumbers = remember { mutableStateListOf<Int?>().apply { addAll(List(27) { null }) } }
+    val cartroNumbers = remember {
+        mutableStateListOf<Int?>().apply {
+            if (cartro != null) {
+                addAll(cartro)
+            } else {
+                addAll(List(27) { null })
+            }
+        }
+    }
     var showInputDialog by remember { mutableStateOf(false) }
     var selectedIndex by remember { mutableStateOf(-1) }
 
@@ -1444,7 +1619,9 @@ fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit) {
                 ) {
                     repeat(3) { rowIndex ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             repeat(9) { columnIndex ->
@@ -1455,7 +1632,7 @@ fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit) {
                                         .aspectRatio(1f)
                                         .background(
                                             color = if (cartroNumbers[index] != null) columnColors[columnIndex % columnColors.size]
-                                             else Color.Gray,
+                                            else Color.Gray,
                                             shape = RoundedCornerShape(4.dp)
                                         )
                                         .border(
@@ -1486,16 +1663,16 @@ fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit) {
 
                 val filledCount = cartroNumbers.count { it != null }
                 Text(
-                    text = "Números emplenats: $filledCount/15",
+                    text = "Números emplenats: $filledCount/2",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (filledCount == 15) Color.DarkGray else Color.Red
+                    color = if (filledCount == 2) Color.DarkGray else Color.Red
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = { onSave(cartroNumbers) },
-                enabled = cartroNumbers.count { it != null } == 15
+                enabled = cartroNumbers.count { it != null } == 2
             ) {
                 Text("Guardar")
             }

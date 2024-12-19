@@ -13,7 +13,7 @@ data class CartroEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
 
     @SerialName("numbers")
-    val numeros: List<Int?>/*, // Llista dels 27 números o nulls
+    val numeros: List<Int?> = emptyList(),/*, // Llista dels 27 números o nulls
 
     @SerialName("data")
     val data: String? = null*/

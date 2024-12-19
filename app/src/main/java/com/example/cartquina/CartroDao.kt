@@ -25,6 +25,9 @@ interface CartroDao {
     @Delete
     fun deleteCartro(cartro: CartroEntity)
 
+    @Update
+    fun updateCartro(cartro: CartroEntity)
+
     // Operaciones para partidas
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertPartida(partida: PartidaEntity) : Long

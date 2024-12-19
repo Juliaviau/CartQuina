@@ -1,0 +1,14 @@
+- canviar interficies
+- canviar el header a cartrons i partides
+- canviar interficie en crear un cartro, i forma d'escriure els numeros
+- FET - el anem per linia o per quina
+- canviar l'interficie del en partida
+- crear els modes sense boles
+- FET - modificar cartró
+- veure partida guardada
+- interficie escollir partida creada
+- reiniciar
+- en afegir cartro, opcio d'afegirhi un cartró existent o de crear-ne un
+- logo i nom
+- Animacio en fer linia o fer quina
+- Anotar quants de quants numeros s'han dit i quans en falten a cada cartró
