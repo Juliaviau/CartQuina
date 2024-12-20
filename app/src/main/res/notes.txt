@@ -13,3 +13,31 @@
 - Animacio en fer linia o fer quina
 - Anotar quants de quants numeros s'han dit i quans en falten a cada cartró
 - tatxar els numeros del cartro millor
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+- canviar interficies
+- canviar el header a cartrons i partides
+- canviar interficie en crear un cartro, i forma d'escriure els numeros
+- canviar l'interficie del en partida
+- interficie escollir partida creada
+- logo i nom
+
+- FET - el anem per linia o per quina
+- FET - modificar cartró
+- FET - en afegir cartro, opcio d'afegirhi un cartró existent o de crear-ne un
+- FET - reiniciar
+
+- crear els modes sense boles
+
+- veure partida guardada
+
+- eliminar cartrons de dins la partida (des de visualitzacio de partida)
+
+
+
+- Animacio en fer linia o fer quina
+
+- Anotar quants de quants numeros s'han dit i quans en falten a cada cartró
+
+- tatxar els numeros del cartro millor

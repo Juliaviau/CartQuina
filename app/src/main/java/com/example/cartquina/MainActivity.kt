@@ -1066,6 +1066,9 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     var expandedMenu by remember { mutableStateOf(false) }  // Controla l'obertura del menú
     var showAddCartroDialog by remember { mutableStateOf(false) }
 
+    var reiniciarPartida by remember { mutableStateOf(false) }
+
+
     var mostrarCarregarCartroExistent by remember { mutableStateOf(false) }
     var mostrarCrearCartroNou by remember { mutableStateOf(false) }
 
@@ -1206,7 +1209,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                                 text = {Text(text = "REINICIAR")},
                                 onClick = {
                                     println("Reiniciar seleccionat")
-                                    // Aquí pots gestionar l'acció per reiniciar la partida
+                                    reiniciarPartida = true
                                     expandedMenu = false
                                 },
                                 leadingIcon = {
@@ -1438,6 +1441,18 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
         )
     }
 
+    if (reiniciarPartida) {
+        LaunchedEffect(Unit) {
+            partida?.let { currentPartida ->
+                val updatedPartida = currentPartida.copy(estat = "Línia", numerosDit = emptyList())
+                scope.launch(Dispatchers.IO) {
+                    database.cartroDao().updatePartida(updatedPartida)
+                    numerosSeleccionados.clear()
+                    reiniciarPartida = false
+                }
+            }
+        }
+    }
 
     if (mostrarCarregarCartroExistent) {
         AddCartroExistentDialog(
@@ -1468,11 +1483,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 }
             }
         )
-
-
-
-
-
     }
 }
 
