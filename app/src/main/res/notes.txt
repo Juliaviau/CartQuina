@@ -31,13 +31,10 @@
 - crear els modes sense boles
 
 - veure partida guardada
-
 - eliminar cartrons de dins la partida (des de visualitzacio de partida)
 
-
+- tatxar els numeros del cartro millor
 
 - Animacio en fer linia o fer quina
 
 - Anotar quants de quants numeros s'han dit i quans en falten a cada cartró
-
-- tatxar els numeros del cartro millor

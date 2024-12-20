@@ -22,6 +22,9 @@ interface CartroDao {
     @Query("SELECT * FROM cartrons")
     fun getAllCartrosUn(): List<CartroEntity>
 
+    @Query("SELECT * FROM cartrons WHERE id IN (:ids)")
+     fun getCartrosByIds(ids: List<Int>): List<CartroEntity>
+
     @Delete
     fun deleteCartro(cartro: CartroEntity)
 

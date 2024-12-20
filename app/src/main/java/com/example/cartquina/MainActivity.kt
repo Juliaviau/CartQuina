@@ -7,6 +7,7 @@ import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.launch
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -69,6 +70,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -117,8 +120,114 @@ fun AppNavigation() {
 
             GameScreen(navController, partida)
         }
+        composable("gameNoBolesIdividual") {
+            GameNoBolesIndividualScreen(navController = navController, cartro = null)
+        }
+
+        composable("gameNoBolesIdividual/{idsJson}") { backStackEntry ->
+            val idsJson = backStackEntry.arguments?.getString("idsJson") ?: "[]"
+            val idsCartronsSeleccionats: List<Int> = Gson().fromJson(idsJson, object : TypeToken<List<Int>>() {}.type)
+
+            // Obtenemos los CartroEntity desde la base de datos
+            val cartroEntities = remember {
+                idsCartronsSeleccionats.map { id -> database.cartroDao().getCartroById(id) }
+            }
+
+            GameNoBolesIndividualScreen(
+                navController = navController,
+                cartroEntities = cartroEntities
+            )
+        }
 
 
+    }
+}
+
+@Composable
+fun GameNoBolesIndividualScreen(navController: NavController, cartro: List<CartroEntity>?) {
+
+
+
+
+    //var cartons = partida?.cartronsAsignats
+    /*val cartronsPartidaId = remember {
+        partida?.cartronsAsignats?.toMutableStateList() ?: mutableStateListOf()
+    }*/
+
+    val numerosSeleccionados = remember {mutableStateListOf<Int>()}
+    var gameMode by remember { mutableStateOf("Linia")} //posar estat de la partida
+    val scope = rememberCoroutineScope() // Per gestionar les corrutines
+    val context = LocalContext.current
+    val database = DatabaseInstance.getDatabase(context)
+
+    val cartroList = remember { mutableStateListOf<List<Int?>>() }
+
+
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAFAFA))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically // Alinear verticalment
+            ) {
+                //PER recular
+                IconButton(onClick = {
+                    navController.navigate("home")
+                }) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Menu")
+                }
+
+                Text(
+                    text = "  Cartró ",// + cartro?.id,
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontWeight = FontWeight.W100,
+                        fontSize = 24.sp,
+                        color = Color(0xFF374C60)
+                    )
+                )
+            }
+
+            // Botó Quina/Línia
+            Button(
+                onClick = {
+                    gameMode = if (gameMode == "Quina") "Línia" else "Quina"
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp),
+                shape = RoundedCornerShape(50)
+            ) {
+                Text(
+                    text = "Anem per " + gameMode,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp)
+                )
+            }
+
+            // Mostrar la lista de cartones
+            if (cartroList.isEmpty()) {
+                // Si no hay cartones asignados, mostrar un mensaje
+                Text(
+                    text = "No hi ha cartrons assignats. S'han d'afegir per a poder jugar.",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .wrapContentSize(Alignment.Center),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                CartroList(cartroList = cartroList,numerosSeleccionados) // Si hay cartones, mostrar la lista
+            }
+        }
     }
 }
 
@@ -126,6 +235,10 @@ fun AppNavigation() {
 fun HomeScreen( navController: NavController) {
     var showGameOptions by remember { mutableStateOf(false) } // Estat per mostrar el diàleg
     var showPartidesOptions by remember { mutableStateOf(false) } // Estat per mostrar el diàleg
+    var individualsenseboles by remember { mutableStateOf(false) } // Estat per mostrar el diàleg
+    var mostrarCrearCartroNou by remember { mutableStateOf(false) }
+    var mostrarCarregarCartroExistent by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     // Fons degradat modern
     Box(
@@ -241,14 +354,76 @@ fun HomeScreen( navController: NavController) {
                 if (option == "AMB BOLES") {
                     showPartidesOptions = true
                     //navController.navigate("game") // Navegar a la pantalla del joc
+                } else if (option == "INDIVIDUAL SENSE BOLES") {
+                    individualsenseboles = true
                 }
                 showGameOptions = false
             }
         )
     }
+
+
+    if (individualsenseboles) {
+        //Seleccionar escollir un cartro existent, o crearne un
+        OpcionsAfegirCartro (
+            onDismiss = { individualsenseboles = false },
+            onOptionSelected = { option ->
+                // Accions en seleccionar una opció
+                println("Opció seleccionada: $option")
+
+                if (option == "CREAR UN CARTRÓ NOU") {
+                    mostrarCrearCartroNou = true
+                } else if (option == "CARREGAR UN CARTRÓ EXISTENT") {
+                    mostrarCarregarCartroExistent = true
+                }
+                individualsenseboles = false
+            }
+        )
+    }
+
+    if (mostrarCarregarCartroExistent) {
+        AddCartroExistentDialog(
+            onDismiss = { mostrarCarregarCartroExistent = false },
+            onSave = { idsCartronsSeleccionats, numerosCartronsSeleccionats ->
+                val idsJson = Gson().toJson(idsCartronsSeleccionats)
+                navController.navigate("gameNoBolesIdividual/$idsJson")
+            }
+        )
+
+    }
+
+    /*if (mostrarCrearCartroNou) {
+        AddCartroDialog(
+            onDismiss = { mostrarCrearCartroNou = false },
+            onSave = { numbers ->
+                scope.launch(Dispatchers.IO) {
+                    val cartro = CartroEntity(numeros = numbers)
+                    val newCartroId = database.cartroDao().insertCartro(cartro).toInt()
+
+                    withContext(Dispatchers.Main) {
+                        // Añadir el nuevo ID a la lista mutable
+                        cartronsPartidaId.add(newCartroId)
+
+                        // Actualizar la partida con los nuevos IDs de cartones
+                        partida?.let { currentPartida ->
+                            val updatedPartida = currentPartida.copy(cartronsAsignats = cartronsPartidaId.toList())
+                            scope.launch(Dispatchers.IO) {
+                                database.cartroDao().updatePartida(updatedPartida)
+                            }
+                        }
+
+                        // Actualizar la UI
+                        cartroList.add(cartro.numeros)
+                        mostrarCrearCartroNou = false
+                    }
+                }
+            }
+        )
+    }*/
+
+
+
     var selectedOption by remember { mutableStateOf<String?>(null) }
-
-
     val partidaViewModel: PartidaViewModel = viewModel()
     val partidas = remember { mutableStateListOf<PartidaEntity>() }
 
@@ -257,7 +432,6 @@ fun HomeScreen( navController: NavController) {
         val database = DatabaseInstance.getDatabase(context)
         partidas.addAll(database.cartroDao().getAllPartides())
     }
-
 
     if (showPartidesOptions) {
         PartidaOptionsDialog(
@@ -1487,10 +1661,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
 }
 
 @Composable
-fun AddCartroExistentDialog(
-    onDismiss: () -> Unit,
-    onSave: (List<Int>, List<List<Int?>>) -> Unit // Retorna dues llistes
-) {
+fun AddCartroExistentDialog(onDismiss: () -> Unit, onSave: (List<Int>, List<List<Int?>>) -> Unit) {
     val selectedCartros = remember { mutableStateOf(mutableSetOf<Int>()) }
     val selectedNumbers = remember { mutableStateListOf<List<Int?>>() } // Llista de números seleccionats
     val cartros = remember { mutableStateOf<List<CartroEntity>>(emptyList()) }
@@ -1589,12 +1760,6 @@ fun AddCartroExistentDialog(
         }
     )
 }
-
-
-
-
-
-
 
 @Composable
 fun OpcionsAfegirCartro(onDismiss: () -> Unit, onOptionSelected: (String) -> Unit) {
