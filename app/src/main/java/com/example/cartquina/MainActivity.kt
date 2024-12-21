@@ -66,6 +66,8 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -121,33 +123,23 @@ fun AppNavigation() {
             GameScreen(navController, partida)
         }
         composable("gameNoBolesIdividual") {
-            GameNoBolesIndividualScreen(navController = navController, cartro = null)
+            GameNoBolesIndividualScreen(navController = navController, idsCartronsSeleccionats = null)
         }
 
         composable("gameNoBolesIdividual/{idsJson}") { backStackEntry ->
             val idsJson = backStackEntry.arguments?.getString("idsJson") ?: "[]"
             val idsCartronsSeleccionats: List<Int> = Gson().fromJson(idsJson, object : TypeToken<List<Int>>() {}.type)
 
-            // Obtenemos los CartroEntity desde la base de datos
-            val cartroEntities = remember {
-                idsCartronsSeleccionats.map { id -> database.cartroDao().getCartroById(id) }
-            }
-
             GameNoBolesIndividualScreen(
                 navController = navController,
-                cartroEntities = cartroEntities
+                idsCartronsSeleccionats = idsCartronsSeleccionats
             )
         }
-
-
     }
 }
 
 @Composable
-fun GameNoBolesIndividualScreen(navController: NavController, cartro: List<CartroEntity>?) {
-
-
-
+fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSeleccionats: List<Int>?) {
 
     //var cartons = partida?.cartronsAsignats
     /*val cartronsPartidaId = remember {
@@ -162,7 +154,14 @@ fun GameNoBolesIndividualScreen(navController: NavController, cartro: List<Cartr
 
     val cartroList = remember { mutableStateListOf<List<Int?>>() }
 
+    val cartroEntities = remember { mutableStateOf<List<CartroEntity>>(emptyList()) }
 
+    LaunchedEffect(idsCartronsSeleccionats) {
+        val cartros = idsCartronsSeleccionats?.map { id ->
+            database.cartroDao().getCartroById(id)
+        }
+        cartroEntities.value = cartros as List<CartroEntity>
+    }
 
     Box(
         modifier = Modifier
@@ -175,6 +174,7 @@ fun GameNoBolesIndividualScreen(navController: NavController, cartro: List<Cartr
                 .padding(16.dp)
         ) {
 
+            //Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -213,19 +213,21 @@ fun GameNoBolesIndividualScreen(navController: NavController, cartro: List<Cartr
                 )
             }
 
-            // Mostrar la lista de cartones
-            if (cartroList.isEmpty()) {
-                // Si no hay cartones asignados, mostrar un mensaje
-                Text(
-                    text = "No hi ha cartrons assignats. S'han d'afegir per a poder jugar.",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .wrapContentSize(Alignment.Center),
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
-                )
-            } else {
-                CartroList(cartroList = cartroList,numerosSeleccionados) // Si hay cartones, mostrar la lista
+            Text(text = "num seleccionats {${numerosSeleccionados.size}}", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp))
+
+            // Renderiza la lista de cartones
+            LazyColumn {
+                items(cartroEntities.value) { cartro ->
+                    Text(text = "Cartró: ${cartro.id}",style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp))
+                    Cartro(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        numbers = cartro.numeros,
+                        numerosSeleccionados = numerosSeleccionados
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
         }
     }
@@ -1255,8 +1257,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     if (partida != null) {
         LaunchedEffect(partida.id) {
             // Cargar los cartones de la base de datos
-
-
             val cartones = loadCartonesDePartida(partida.id, context)
             if (cartones != null) {
                 cartroList.clear()
@@ -1276,6 +1276,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 .padding(16.dp)
         ) {
 
+            //header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1439,14 +1440,14 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                                         numerosSeleccionados.add(selectedNumber)
 
                                         // Marcar el número como tachado en los cartones
-                                        for (cartro in cartroList) {
+                                        /*for (cartro in cartroList) {
                                             cartro.forEachIndexed { index, numero ->
                                                 if (numero == selectedNumber) {
                                                     cartroList[cartroList.indexOf(cartro)] =
                                                         cartro.toMutableList().apply { set(index, -numero!!) }
                                                 }
                                             }
-                                        }
+                                        }*/
                                     }
                                 }
                             )
@@ -2030,7 +2031,6 @@ fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSelecciona
         Color(0xFFCE93D8)  // Lila
     )
 
-    // Estructura del cartón
     Column(
         modifier = modifier
             .background(Color.White, shape = RoundedCornerShape(8.dp))
@@ -2048,7 +2048,7 @@ fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSelecciona
                 repeat(9) { columnIndex -> // 9 columnas
                     val index = rowIndex * 9 + columnIndex
                     val number = numbers.getOrNull(index) // Obtiene el número o `null` si es una casilla vacía
-                    val isTachado = number != null && numerosSeleccionados.contains(number) //&& number < 0 // Identificar números tachados
+                    val isSeleccionado = number != null && numerosSeleccionados.contains(number)
 
                     Box(
                         modifier = Modifier
@@ -2061,20 +2061,36 @@ fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSelecciona
                             .border(
                                 BorderStroke(2.dp, Color.Black),
                                 shape = RoundedCornerShape(4.dp)
-                            ),
+                            )
+                            .clickable {
+                                number?.let {
+                                    if (numerosSeleccionados.contains(it)) {
+                                        numerosSeleccionados.remove(it)
+                                    } else {
+                                        numerosSeleccionados.add(it)
+                                    }
+                                }
+                            }
+                            .drawBehind {
+                                if (isSeleccionado) {
+                                    drawCircle(
+                                        color = Color.Black,
+                                        style = Stroke(width = 2.dp.toPx()),
+                                        radius = size.minDimension / 2 - 4.dp.toPx()
+                                    )
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = when {
                                 number == null -> "⭐" // Casillas vacías con estrella
-                                isTachado -> "${-number}" // Mostrar número tachado como positivo
-                                else -> number.toString() // Mostrar número normal
+                                else -> number.toString() // Mostrar número
                             },
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontSize = 16.sp,
-                                fontWeight = if (isTachado) FontWeight.ExtraBold else FontWeight.Bold,
-                                color = if (isTachado) Color.Red else Color.Black, // Diferenciar con color rojo
-                                textDecoration = if (isTachado) TextDecoration.LineThrough else TextDecoration.None // Línea tachada
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
                             ),
                             textAlign = TextAlign.Center
                         )
@@ -2084,6 +2100,7 @@ fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSelecciona
         }
     }
 }
+
 
 @Composable
 fun GameOptionsDialog(onDismiss: () -> Unit, onOptionSelected: (String) -> Unit) {
