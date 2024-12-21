@@ -27,13 +27,11 @@
 - FET - modificar cartró
 - FET - en afegir cartro, opcio d'afegirhi un cartró existent o de crear-ne un
 - FET - reiniciar
-
-- crear els modes sense boles
+- FET - tatxar els numeros del cartro millor
+- FET - crear els modes sense boles
 
 - veure partida guardada
 - eliminar cartrons de dins la partida (des de visualitzacio de partida)
-
-- tatxar els numeros del cartro millor
 
 - Animacio en fer linia o fer quina
 

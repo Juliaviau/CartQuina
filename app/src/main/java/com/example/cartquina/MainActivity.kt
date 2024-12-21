@@ -54,6 +54,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.border
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -70,7 +71,9 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -143,22 +146,16 @@ fun AppNavigation() {
 
 @Composable
 fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSeleccionats: List<Int>?) {
-
-    //var cartons = partida?.cartronsAsignats
-    /*val cartronsPartidaId = remember {
-        partida?.cartronsAsignats?.toMutableStateList() ?: mutableStateListOf()
-    }*/
-
-    val numerosSeleccionados = remember {mutableStateListOf<Int>()}
-    var gameMode by remember { mutableStateOf("Linia")} //posar estat de la partida
-    val scope = rememberCoroutineScope() // Per gestionar les corrutines
+    val numerosSeleccionados = remember { mutableStateListOf<Int>() }
+    var gameMode by remember { mutableStateOf("Linia") }
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
-    val activity = context as? Activity
-
-    val cartroList = remember { mutableStateListOf<List<Int?>>() }
 
     val cartroEntities = remember { mutableStateOf<List<CartroEntity>>(emptyList()) }
+
+    // Controla la rotación de la lista de cartones
+    var isRotated by remember { mutableStateOf(false) }
 
     LaunchedEffect(idsCartronsSeleccionats) {
         val cartros = idsCartronsSeleccionats?.map { id ->
@@ -178,13 +175,12 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                 .padding(16.dp)
         ) {
 
-            //Header
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically // Alinear verticalment
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                //PER recular
                 IconButton(onClick = {
                     navController.navigate("home")
                 }) {
@@ -192,7 +188,7 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                 }
 
                 Text(
-                    text = "  Cartró ",// + cartro?.id,
+                    text = "  Cartró ",
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontWeight = FontWeight.W100,
                         fontSize = 24.sp,
@@ -201,19 +197,14 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                 )
 
                 IconButton(onClick = {
-                    activity?.let {
-                        val currentOrientation = it.requestedOrientation
-                        it.requestedOrientation = when (currentOrientation) {
-                            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                            else -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                        }
-                    }
+                    // Cambiar el estado de rotación
+                    isRotated = !isRotated
                 }) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Orientacio de pantalla")
+                    Icon(Icons.Default.Refresh, contentDescription = "Orientacio de cartrons")
                 }
             }
 
-            // Botó Quina/Línia
+            // Botón Quina/Línia
             Button(
                 onClick = {
                     gameMode = if (gameMode == "Quina") "Línia" else "Quina"
@@ -224,30 +215,76 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                 shape = RoundedCornerShape(50)
             ) {
                 Text(
-                    text = "Anem per " + gameMode,
+                    text = "Anem per $gameMode",
                     style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp)
                 )
             }
 
-            Text(text = "num seleccionats {${numerosSeleccionados.size}}", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp))
+            Text(
+                text = "num seleccionats {${numerosSeleccionados.size}}",
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp)
+            )
 
-            // Renderiza la lista de cartones
-            LazyColumn {
+            // Renderizar la lista de cartones
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = if (isRotated) 0.dp else 0.dp) // Padding horizontal cuando está rotado
+                    .graphicsLayer {
+                        rotationZ = if (isRotated) 90f else 0f
+                        // Ajustar el pivote para centrar la rotación
+                        transformOrigin = TransformOrigin(0.5f, 0.5f)
+                    },
+                contentPadding = PaddingValues(
+                    vertical = if (isRotated) 6.dp else 8.dp // Ajustar padding inicial si está rotado
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp) // Reducido el espacio entre elementos
+            ) {
+                if (isRotated) {
+                    item {
+                        Spacer(modifier = Modifier.height(100.dp)) // Espacio extra antes del primer cartón
+                    }
+                }
                 items(cartroEntities.value) { cartro ->
-                    Text(text = "Cartró: ${cartro.id}",style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp))
-                    Cartro(
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        numbers = cartro.numeros,
-                        numerosSeleccionados = numerosSeleccionados
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                            .background(Color.LightGray)
+                            .padding(horizontal = 1.dp, vertical = 1.dp)
+                            .aspectRatio(2f)
+                            .fillMaxSize(), // Ocupa todo el ancho disponible
+                        contentAlignment = Alignment.Center
+
+                    ) {
+                        Column(
+
+                            modifier = Modifier.padding(4.dp).fillMaxWidth(), // Reducido el padding del Column
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Cartró: ${cartro.id}",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp)
+                            )
+                            Cartro(
+                                modifier = Modifier
+                                    .padding(vertical = 4.dp), // Reducido el padding vertical
+                                numbers = cartro.numeros,
+                                numerosSeleccionados = numerosSeleccionados
+                            )
+                        }
+                    }
+                }
+                if (isRotated) {
+                    item {
+                        Spacer(modifier = Modifier.height(100.dp)) // Espacio extra antes del primer cartón
+                    }
                 }
             }
         }
     }
 }
+
+
+
 
 @Composable
 fun HomeScreen( navController: NavController) {
@@ -2047,6 +2084,7 @@ fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSelecciona
         Color(0xFFCE93D8)  // Lila
     )
 
+
     Column(
         modifier = modifier
             .background(Color.White, shape = RoundedCornerShape(8.dp))
@@ -2055,10 +2093,32 @@ fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSelecciona
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         repeat(3) { rowIndex -> // 3 filas
+            val isRowComplete = (0 until 9).count { columnIndex -> // Cuenta los números seleccionados en la fila
+                val index = rowIndex * 9 + columnIndex
+                val number = numbers.getOrNull(index)
+                number != null && numerosSeleccionados.contains(number)
+            } == 5 // Comprueba si hay 5 números seleccionados
+
+            var isScaled by remember { mutableStateOf(false) }
+
+            LaunchedEffect(isRowComplete) {
+                if (isRowComplete) {
+                    isScaled = true
+                    delay(400) // Espera 2 segundos
+                    isScaled = false
+                }
+            }
+
+            val scale by animateFloatAsState(
+                targetValue = if (isScaled) 1.2f else 1f, // Escala aumentada cuando la fila está completa
+                animationSpec = tween(durationMillis = 500)
+            )
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = 4.dp)
+                    .graphicsLayer(scaleX = scale, scaleY = scale), // Aplica la escala
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 repeat(9) { columnIndex -> // 9 columnas
@@ -2084,6 +2144,7 @@ fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSelecciona
                                         numerosSeleccionados.remove(it)
                                     } else {
                                         numerosSeleccionados.add(it)
+                                        Log.d("NUMEROS SELECCIONADOS", numerosSeleccionados.toString() + isRowComplete)
                                     }
                                 }
                             }
