@@ -40,6 +40,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -72,9 +73,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -89,6 +92,9 @@ import java.sql.SQLOutput
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.Executors
+import kotlin.random.Random
+import kotlin.text.contains
+import kotlin.text.toFloat
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -148,7 +154,7 @@ fun AppNavigation() {
 @Composable
 fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSeleccionats: List<Int>?) {
     val numerosSeleccionados = remember { mutableStateListOf<Int>() }
-    var gameMode by remember { mutableStateOf("Linia") }
+    var gameMode by remember { mutableStateOf("Línia") }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
@@ -258,7 +264,9 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                     ) {
                         Column(
 
-                            modifier = Modifier.padding(4.dp).fillMaxWidth(), // Reducido el padding del Column
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .fillMaxWidth(), // Reducido el padding del Column
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -666,7 +674,7 @@ fun loadGameToScreen(partida: PartidaEntity,database: AppDatabase,navController:
     val newPartida = PartidaEntity(
         data = formattedDateTime, // Usa la fecha y hora formateada
         numerosDit = listOf(), // Inicia sin números llamados
-        estat = "linia", // Puede ser "linia" o "quines"
+        estat = "Línia", // Puede ser "linia" o "quines"
         cartronsAsignats = listOf() // No asignamos cartones aún
     )
 
@@ -1749,15 +1757,17 @@ fun AddCartroExistentDialog(onDismiss: () -> Unit, onSave: (List<Int>, List<List
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .clickable {
-                                selectedCartros.value = selectedCartros.value.toMutableSet().apply {
-                                    if (isSelected) {
-                                        remove(cartro.id)
-                                        selectedNumbers.remove(cartro.numeros) // Elimina els números
-                                    } else {
-                                        add(cartro.id)
-                                        selectedNumbers.add(cartro.numeros) // Afegeix els números
+                                selectedCartros.value = selectedCartros.value
+                                    .toMutableSet()
+                                    .apply {
+                                        if (isSelected) {
+                                            remove(cartro.id)
+                                            selectedNumbers.remove(cartro.numeros) // Elimina els números
+                                        } else {
+                                            add(cartro.id)
+                                            selectedNumbers.add(cartro.numeros) // Afegeix els números
+                                        }
                                     }
-                                }
                             },
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
@@ -2074,23 +2084,35 @@ fun Ball(ballNumber: Int, numerosSeleccionados: MutableList<Int>, onBallClicked:
 }
 
 @Composable
-fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSeleccionados: MutableList<Int>, estat: String ) {
-    // Colores de las columnas, basados en el bingo tradicional
+fun Cartro(
+    modifier: Modifier = Modifier,
+    numbers: List<Int?>,
+    numerosSeleccionados: MutableList<Int>,estat: String
+) {
     val columnColors = listOf(
-        Color(0xFFFFCDD2), // Rosa
-        Color(0xFFFFF59D), // Amarillo
-        Color(0xFFA5D6A7), // Verde
-        Color(0xFF90CAF9), // Azul
-        Color(0xFFCE93D8)  // Lila
+        Color(0xFFF2D7D9),
+        Color(0xFFD6EAF8),
+        Color(0xFFD4EFDF),
+        Color(0xFFFCF3CF),
+        Color(0xFFF5EEF8),
+        Color(0xFFE8DAEF),
+        Color(0xFFD0ECE7),
+        Color(0xFFE5E7E9),
+        Color(0xFFFADBD8)
     )
 
-    System.out.println("ESTAT: " + estat)
-
+    val density = LocalDensity.current
+    val confettiParticles = remember { mutableStateListOf<ConfettiParticle>() }
+    val scope = rememberCoroutineScope()
+    var showLineText by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
             .background(Color.White, shape = RoundedCornerShape(8.dp))
-            .border(BorderStroke(2.dp, Color.Black), shape = RoundedCornerShape(8.dp))
+            .border(
+                androidx.compose.foundation.BorderStroke(2.dp, Color.Black),
+                shape = RoundedCornerShape(8.dp)
+            )
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -2102,25 +2124,59 @@ fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSelecciona
             } == 5 // Comprueba si hay 5 números seleccionados
 
             var isScaled by remember { mutableStateOf(false) }
+            var isGlowing by remember { mutableStateOf(false) }
 
             LaunchedEffect(isRowComplete) {
-                if (isRowComplete) {
+                if (isRowComplete && estat == "Línia") {
                     isScaled = true
-                    delay(400) // Espera 2 segundos
+                    isGlowing = true
+                    showLineText = true
+                    scope.launch {
+                        // Generar partículas de confeti
+                        val rowHeight = with(density) { 40.dp.toPx() }
+                        val rowWidth = with(density) { 360.dp.toPx() }
+                        val rowY = rowIndex * rowHeight + rowHeight / 2
+                        val rowX = rowWidth / 2
+                        repeat(50) {
+                            confettiParticles.add(
+                                ConfettiParticle(
+                                    x = rowX + Random.nextInt(-100, 100),
+                                    y = rowY,
+                                    color = Color(Random.nextLong(0xFF000000, 0xFFFFFFFF)),
+                                    size = Random.nextInt(5, 15).toFloat(),
+                                    rotation = Random.nextInt(0, 360).toFloat(),
+                                    xVelocity = Random.nextInt(-10, 10).toFloat(),
+                                    yVelocity = Random.nextInt(-20, -5).toFloat()
+                                )
+                            )
+                        }
+                    }
+                    delay(200) // Espera 2 segundos
                     isScaled = false
+                    isGlowing = false
+                    showLineText = false
                 }
             }
 
-            val scale by animateFloatAsState(
+            val scale by androidx.compose.animation.core.animateFloatAsState(
                 targetValue = if (isScaled) 1.2f else 1f, // Escala aumentada cuando la fila está completa
-                animationSpec = tween(durationMillis = 500)
+                animationSpec = androidx.compose.animation.core.tween(durationMillis = 500)
             )
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
-                    .graphicsLayer(scaleX = scale, scaleY = scale), // Aplica la escala
+                    .graphicsLayer(scaleX = scale, scaleY = scale)
+                    .drawBehind {
+                        if (isGlowing) {
+                            drawCircle(
+                                color = Color.Yellow.copy(alpha = 0.5f),
+                                radius = size.minDimension * 0.6f,
+                                center = Offset(size.width / 2, size.height / 2)
+                            )
+                        }
+                    },
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 repeat(9) { columnIndex -> // 9 columnas
@@ -2137,7 +2193,7 @@ fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSelecciona
                                 shape = RoundedCornerShape(4.dp)
                             )
                             .border(
-                                BorderStroke(2.dp, Color.Black),
+                                androidx.compose.foundation.BorderStroke(2.dp, Color.Black),
                                 shape = RoundedCornerShape(4.dp)
                             )
                             .clickable {
@@ -2146,7 +2202,7 @@ fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSelecciona
                                         numerosSeleccionados.remove(it)
                                     } else {
                                         numerosSeleccionados.add(it)
-                                        Log.d("NUMEROS SELECCIONADOS", numerosSeleccionados.toString() + isRowComplete)
+                                        //Log.d("NUMEROS SELECCIONADOS", numerosSeleccionados.toString() + isRowComplete)
                                     }
                                 }
                             }
@@ -2178,7 +2234,74 @@ fun Cartro(modifier: Modifier = Modifier, numbers: List<Int?>, numerosSelecciona
             }
         }
     }
+    if (showLineText) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.3f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "LÍNIA!",
+                style = MaterialTheme.typography.displayLarge.copy(
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 40.sp
+                )
+            )
+        }
+    }
+
+    ConfettiAnimation(confettiParticles)
 }
+
+data class ConfettiParticle(
+    var x: Float,
+    var y: Float,
+    val color: Color,
+    val size: Float,
+    var rotation: Float,
+    var xVelocity: Float,
+    var yVelocity: Float
+)
+
+@Composable
+fun ConfettiAnimation(particles: MutableList<ConfettiParticle>) {
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(particles.size) {
+        if (particles.isNotEmpty()) {
+            scope.launch {
+                while (particles.isNotEmpty()) {
+                    particles.forEach { particle ->
+                        // Actualizar posición y rotación inmediatamente
+                        particle.x += particle.xVelocity
+                        particle.y += particle.yVelocity
+                        particle.rotation += 5f
+                        particle.yVelocity += 0.5f // Simula gravedad
+                    }
+                    particles.removeAll { it.y > 1000f } // Elimina partículas fuera de la pantalla
+                    delay(16L) // Aproximadamente 60 FPS
+                }
+            }
+        }
+    }
+
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        particles.forEach { particle ->
+            with(particle) {
+                // Dibuja las partículas con su posición y tamaño actuales
+                drawCircle(
+                    color = color,
+                    radius = size,
+                    center = Offset(x, y),
+                    style = Fill
+                )
+            }
+        }
+    }
+}
+
 
 
 @Composable
