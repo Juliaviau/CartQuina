@@ -1,6 +1,8 @@
 package com.example.cartquina
 
+import android.app.Activity
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -60,6 +62,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -151,6 +154,7 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
     val scope = rememberCoroutineScope() // Per gestionar les corrutines
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
+    val activity = context as? Activity
 
     val cartroList = remember { mutableStateListOf<List<Int?>>() }
 
@@ -195,6 +199,18 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                         color = Color(0xFF374C60)
                     )
                 )
+
+                IconButton(onClick = {
+                    activity?.let {
+                        val currentOrientation = it.requestedOrientation
+                        it.requestedOrientation = when (currentOrientation) {
+                            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                            else -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                        }
+                    }
+                }) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Orientacio de pantalla")
+                }
             }
 
             // Botó Quina/Línia
