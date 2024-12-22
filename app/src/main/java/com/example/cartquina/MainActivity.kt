@@ -3,6 +3,7 @@ package com.example.cartquina
 import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.graphics.fonts.FontStyle
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -65,6 +66,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Clear
@@ -1289,6 +1291,17 @@ fun CustomToast(message: String) {
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
 @Composable
 fun GameScreen(navController: NavController, partida: PartidaEntity?) {
 
@@ -1308,7 +1321,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     var showAddCartroDialog by remember { mutableStateOf(false) }
 
     var reiniciarPartida by remember { mutableStateOf(false) }
-
 
     var mostrarCarregarCartroExistent by remember { mutableStateOf(false) }
     var mostrarCrearCartroNou by remember { mutableStateOf(false) }
@@ -1333,7 +1345,9 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFAFAFA))
+          //  .background(Color(0xFF798083))
+            .background(Color(0xFFC9DAE3))
+            //.background(Color(0xFFFAFAFA))
     ) {
         Column(
             modifier = Modifier
@@ -1343,7 +1357,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
 
             //header
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().background(Color(0xFFE8EAEF)),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically // Alinear verticalment
             ) {
@@ -1357,7 +1371,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 }
 
                 Text(
-                    text = "  Partida " + partida?.id + "   " + partida?.data,
+                    text = "Partida " + partida?.id + "   " + partida?.data,
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontWeight = FontWeight.W100,
                         fontSize = 24.sp,
@@ -1368,7 +1382,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 15.dp)
+                        .padding(start = 12.dp)
                         .wrapContentSize(Alignment.TopEnd),
                     contentAlignment = Alignment.Center
                 ) {
@@ -1471,7 +1485,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp)
+                    .padding(vertical = 10.dp)
             ) {
                 for (rowIndex in 0 until 9) {
                     Row(
@@ -1522,32 +1536,44 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
             }
 
             // Botó Quina/Línia
-            Button(
-                onClick = {
-                    gameMode = if (gameMode == "Quina") "Línia" else "Quina"
-                },
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 6.dp),
-                shape = RoundedCornerShape(50)
+                    .padding(vertical = 1.dp),
+                contentAlignment = Alignment.Center // Centra el contenido dentro del Box
             ) {
-                Text(
-                    text = "Anem per " + gameMode,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp)
-                )
+                Button(
+                    onClick = {
+                        gameMode = if (gameMode == "Quina") "Línia" else "Quina"
+                    },
+                    modifier = Modifier
+                        .widthIn(min = 250.dp) // Ancho ajustable
+                        .height(48.dp), // Altura discreta
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE8EAEF), // Fondo suave
+                        contentColor = Color(0xFF374C60) // Texto en gris oscuro
+                    ),
+                    shape = RoundedCornerShape(8.dp), // Esquinas suaves
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp, // Sin sombra para diseño plano
+                        pressedElevation = 2.dp // Pequeña elevación al presionar
+                    )
+                ) {
+                    Text(
+                        text = "Anem per $gameMode",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Normal // Menos énfasis
+                        ),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
-            /*
-            el de boles:
-            va per partides. a cada partida guarda una nota, la data, els numeros que s'han dit , si es va per quina o per linia, i cartrons assignats a la partida. a mes, per a cada cartro sap quins numeros s'han tatxat i quins no
-            en clicar jugar, es selecciona nova partida o carregar una partida guardada
-            un boto a inici per a veure parides guardades, i es mostra quins numeros s'han dit, i lestat dels cartrons. sense poder modificar, nomes eliminar
-            un llistat de cartrons tambe, que es puguin modificar, eliminar i afegir. han de tenir un nom tambe
 
-            es guarda la partida en tornar enrere per boto, en donarli a acabar partida, i en guardar partida
 
-            els altres no guarda a la base de dades la partida, nomes es crea un cartro o sen carrega un o multiples. i es tatxa en aquell moment individualment
-             */
+
+
 
             // Mostrar la lista de cartones
             if (cartroList.isEmpty()) {
@@ -1598,35 +1624,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
             }
         }
     }
-
-        //*******************************************************************************************
-        /*val updatedPartida = gameMode?.let {
-            partida?.copy(
-                numerosDit = numerosSeleccionados,
-                estat = it // Cambiar el estado si es necesario
-            )
-        } ?: partida?.let {
-            gameMode?.let { it1 ->
-                PartidaEntity(
-                    data = partida?.data ?: "", // Usar la fecha de la partida existente
-                    numerosDit = numerosSeleccionados,
-                    estat = it1, // Estado inicial
-                    cartronsAsignats = it.cartronsAsignats // Los cartones asignados
-                )
-            }
-        }
-        val executor = Executors.newSingleThreadExecutor()
-        executor.execute {
-            if (updatedPartida != null) {
-                database.cartroDao().updatePartida(updatedPartida)
-                Log.d("AAAAAGUUUUARDDDADAAA",updatedPartida.id.toString())
-            }
-
-        }
-
-        guardarPartidaToast = true
-        guardarPartida = false*/
-  //  }
 
     if (guardarPartidaToast) {
         CustomToast(message = "Partida guardada correctament 🎉")
@@ -1727,6 +1724,25 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
         )
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @Composable
 fun AddCartroExistentDialog(onDismiss: () -> Unit, onSave: (List<Int>, List<List<Int?>>) -> Unit) {
@@ -2093,15 +2109,8 @@ fun Ball(ballNumber: Int, numerosSeleccionados: MutableList<Int>, onBallClicked:
     }
 }
 
-
 @Composable
-fun Cartro(
-    modifier: Modifier = Modifier,
-    numbers: List<Int?>,
-    numerosSeleccionados: MutableList<Int>,
-    estat: String,
-    onGameModeChanged: (String) -> Unit
-) {
+fun Cartro(modifier: Modifier = Modifier,numbers: List<Int?>,numerosSeleccionados: MutableList<Int>,estat: String,onGameModeChanged: (String) -> Unit) {
     val columnColors = listOf(
         Color(0xFFF2D7D9),
         Color(0xFFD6EAF8),
@@ -2324,7 +2333,6 @@ fun Cartro(
     }
     ConfettiAnimation(confettiParticles)
 }
-
 
 data class ConfettiParticle(
     var x: Float,
