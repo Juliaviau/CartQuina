@@ -29,10 +29,11 @@
 - FET - reiniciar
 - FET - tatxar els numeros del cartro millor
 - FET - crear els modes sense boles
+- FET - Animacio en fer linia o fer quina
 
 - veure partida guardada
 - eliminar cartrons de dins la partida (des de visualitzacio de partida)
 
-- Animacio en fer linia o fer quina
+
 
 - Anotar quants de quants numeros s'han dit i quans en falten a cada cartró

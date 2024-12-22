@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">CartQuina</string>
+    <string name="linia">Línia</string>
+    <string name="quina">Quina</string>
 </resources>

@@ -55,6 +55,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.Add
@@ -78,6 +79,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -222,7 +224,7 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                 shape = RoundedCornerShape(50)
             ) {
                 Text(
-                    text = "Anem per $gameMode",
+                    text = "Anem per ${gameMode.toString()}",
                     style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp)
                 )
             }
@@ -278,7 +280,10 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                                     .padding(vertical = 4.dp), // Reducido el padding vertical
                                 numbers = cartro.numeros,
                                 numerosSeleccionados = numerosSeleccionados,
-                                estat = gameMode
+                                estat = gameMode,
+                                onGameModeChanged = { newGameMode -> // Handle the callback here
+                                    gameMode = newGameMode
+                                }
                             )
                         }
                     }
@@ -1298,7 +1303,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     var guardarPartida by remember { mutableStateOf(false) }
     var guardarPartidaToast by remember { mutableStateOf(false) }
 
-    var gameMode by remember { mutableStateOf(if (partida?.estat?.isEmpty() == true) {"Linia"} else {partida?.estat})} //posar estat de la partida
+    var gameMode by remember { mutableStateOf(if (partida?.estat?.isEmpty() == true) {"Línia"} else {partida?.estat})} //posar estat de la partida
     var expandedMenu by remember { mutableStateOf(false) }  // Controla l'obertura del menú
     var showAddCartroDialog by remember { mutableStateOf(false) }
 
@@ -1556,7 +1561,9 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                     textAlign = TextAlign.Center
                 )
             } else {
-                gameMode?.let { CartroList(cartroList = cartroList,numerosSeleccionados, it) } // Si hay cartones, mostrar la lista
+                gameMode?.let { CartroList(cartroList = cartroList,numerosSeleccionados, it, onGameModeChanged = { newGameMode -> // Handle the callback here
+                    gameMode = newGameMode
+                }) } // Si hay cartones, mostrar la lista
             }
         }
     }
@@ -1881,7 +1888,7 @@ fun OpcionsAfegirCartro(onDismiss: () -> Unit, onOptionSelected: (String) -> Uni
 }
 
 @Composable
-fun CartroList(cartroList: List<List<Int?>>, numerosSeleccionados: MutableList<Int>, gameMode: String) {
+fun CartroList(cartroList: List<List<Int?>>, numerosSeleccionados: MutableList<Int>, gameMode: String, onGameModeChanged: (String) -> Unit) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -1893,7 +1900,10 @@ fun CartroList(cartroList: List<List<Int?>>, numerosSeleccionados: MutableList<I
                     .padding(vertical = 8.dp),
                 numbers = cartroNumbers,
                 numerosSeleccionados = numerosSeleccionados,
-                estat = gameMode
+                estat = gameMode,
+                onGameModeChanged = { newGameMode -> // Handle the callback here
+                    onGameModeChanged(newGameMode)
+                }
             )
         }
     }
@@ -2083,11 +2093,14 @@ fun Ball(ballNumber: Int, numerosSeleccionados: MutableList<Int>, onBallClicked:
     }
 }
 
+
 @Composable
 fun Cartro(
     modifier: Modifier = Modifier,
     numbers: List<Int?>,
-    numerosSeleccionados: MutableList<Int>,estat: String
+    numerosSeleccionados: MutableList<Int>,
+    estat: String,
+    onGameModeChanged: (String) -> Unit
 ) {
     val columnColors = listOf(
         Color(0xFFF2D7D9),
@@ -2105,155 +2118,213 @@ fun Cartro(
     val confettiParticles = remember { mutableStateListOf<ConfettiParticle>() }
     val scope = rememberCoroutineScope()
     var showLineText by remember { mutableStateOf(false) }
+    var lineTextOpacity by remember { mutableStateOf(1f) }
+    var isCartroScaled by remember { mutableStateOf(false) } // Per escalar el cartró
+    val cartroScale by animateFloatAsState(
+        targetValue = if (isCartroScaled) 1.2f else 1f,
+        animationSpec = tween(durationMillis = 200, easing = LinearOutSlowInEasing)
+    )
 
-    Column(
-        modifier = modifier
-            .background(Color.White, shape = RoundedCornerShape(8.dp))
-            .border(
-                androidx.compose.foundation.BorderStroke(2.dp, Color.Black),
-                shape = RoundedCornerShape(8.dp)
-            )
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        repeat(3) { rowIndex -> // 3 filas
-            val isRowComplete = (0 until 9).count { columnIndex -> // Cuenta los números seleccionados en la fila
-                val index = rowIndex * 9 + columnIndex
-                val number = numbers.getOrNull(index)
-                number != null && numerosSeleccionados.contains(number)
-            } == 5 // Comprueba si hay 5 números seleccionados
-
-            var isScaled by remember { mutableStateOf(false) }
-            var isGlowing by remember { mutableStateOf(false) }
-
-            LaunchedEffect(isRowComplete) {
-                if (isRowComplete && estat == "Línia") {
-                    isScaled = true
-                    isGlowing = true
-                    showLineText = true
-                    scope.launch {
-                        // Generar partículas de confeti
-                        val rowHeight = with(density) { 40.dp.toPx() }
-                        val rowWidth = with(density) { 360.dp.toPx() }
-                        val rowY = rowIndex * rowHeight + rowHeight / 2
-                        val rowX = rowWidth / 2
-                        repeat(50) {
-                            confettiParticles.add(
-                                ConfettiParticle(
-                                    x = rowX + Random.nextInt(-100, 100),
-                                    y = rowY,
-                                    color = Color(Random.nextLong(0xFF000000, 0xFFFFFFFF)),
-                                    size = Random.nextInt(5, 15).toFloat(),
-                                    rotation = Random.nextInt(0, 360).toFloat(),
-                                    xVelocity = Random.nextInt(-10, 10).toFloat(),
-                                    yVelocity = Random.nextInt(-20, -5).toFloat()
-                                )
-                            )
-                        }
-                    }
-                    delay(200) // Espera 2 segundos
-                    isScaled = false
-                    isGlowing = false
-                    showLineText = false
-                }
-            }
-
-            val scale by androidx.compose.animation.core.animateFloatAsState(
-                targetValue = if (isScaled) 1.2f else 1f, // Escala aumentada cuando la fila está completa
-                animationSpec = androidx.compose.animation.core.tween(durationMillis = 500)
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-                    .graphicsLayer(scaleX = scale, scaleY = scale)
-                    .drawBehind {
-                        if (isGlowing) {
-                            drawCircle(
-                                color = Color.Yellow.copy(alpha = 0.5f),
-                                radius = size.minDimension * 0.6f,
-                                center = Offset(size.width / 2, size.height / 2)
-                            )
-                        }
-                    },
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                repeat(9) { columnIndex -> // 9 columnas
+    Box(modifier = modifier
+        .fillMaxSize()
+        .graphicsLayer(scaleX = cartroScale, scaleY = cartroScale)) {
+        Column(
+            modifier = Modifier
+                .background(Color.White, shape = RoundedCornerShape(8.dp))
+                .border(
+                    androidx.compose.foundation.BorderStroke(2.dp, Color.Black),
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            repeat(3) { rowIndex ->
+                val isRowComplete = (0 until 9).count { columnIndex ->
                     val index = rowIndex * 9 + columnIndex
-                    val number = numbers.getOrNull(index) // Obtiene el número o `null` si es una casilla vacía
-                    val isSeleccionado = number != null && numerosSeleccionados.contains(number)
+                    val number = numbers.getOrNull(index)
+                    number != null && numerosSeleccionados.contains(number)
+                } == 5
 
-                    Box(
-                        modifier = Modifier
-                            .weight(1f) // Todas las celdas tienen el mismo ancho
-                            .aspectRatio(1f) // Mantener proporción cuadrada
-                            .background(
-                                color = if (number == null) Color.Gray else columnColors[columnIndex % columnColors.size],
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .border(
-                                androidx.compose.foundation.BorderStroke(2.dp, Color.Black),
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .clickable {
-                                number?.let {
-                                    if (numerosSeleccionados.contains(it)) {
-                                        numerosSeleccionados.remove(it)
-                                    } else {
-                                        numerosSeleccionados.add(it)
-                                        //Log.d("NUMEROS SELECCIONADOS", numerosSeleccionados.toString() + isRowComplete)
+                val isAllComplete by remember(numbers, numerosSeleccionados) {
+                    derivedStateOf {
+                        numbers.count { it != null && numerosSeleccionados.contains(it) } == 15
+                    }
+                }
+                System.out.println("isAllComplete: $isAllComplete")
+
+                var isScaled by remember { mutableStateOf(false) }
+                var isGlowing by remember { mutableStateOf(false) }
+
+                LaunchedEffect(isRowComplete) {
+                    if (isRowComplete && estat == "Línia") {
+                        isScaled = true
+                        isGlowing = true
+                        showLineText = true
+                        lineTextOpacity = 1f
+                        scope.launch {
+                            val rowHeight = with(density) { 40.dp.toPx() }
+                            val rowWidth = with(density) { 360.dp.toPx() }
+                            val rowY = rowIndex * rowHeight + rowHeight / 2
+                            val rowX = rowWidth / 2
+                            repeat(50) {
+                                confettiParticles.add(
+                                    ConfettiParticle(
+                                        x = rowX + Random.nextInt(-100, 100),
+                                        y = rowY,
+                                        color = Color(Random.nextLong(0xFF000000, 0xFFFFFFFF)),
+                                        size = Random.nextInt(5, 15).toFloat(),
+                                        rotation = Random.nextInt(0, 360).toFloat(),
+                                        xVelocity = Random.nextInt(-10, 10).toFloat(),
+                                        yVelocity = Random.nextInt(-20, -5).toFloat()
+                                    )
+                                )
+                            }
+                            delay(2000) // Confeti visible durante 2 segundos
+                            lineTextOpacity = 0f // Desaparecer texto suavemente
+                            delay(500) // Espera un poco más antes de ocultar por completo
+                            showLineText = false
+                        }
+                        delay(2000)
+                        isScaled = false
+                        isGlowing = false
+                        onGameModeChanged("Quina")
+                    }
+                }
+
+                LaunchedEffect(isAllComplete) {
+                    if (isRowComplete && estat == "Quina") {
+                        //isScaled = true
+                       // isGlowing = true
+                        isCartroScaled = true
+                        showLineText = true
+                        lineTextOpacity = 1f
+                        scope.launch {
+                            val rowHeight = with(density) { 40.dp.toPx() }
+                            val rowWidth = with(density) { 360.dp.toPx() }
+                            val rowY = rowIndex * rowHeight + rowHeight / 2
+                            val rowX = rowWidth / 2
+                            repeat(50) {
+                                confettiParticles.add(
+                                    ConfettiParticle(
+                                        x = rowX + Random.nextInt(-100, 100),
+                                        y = rowY,
+                                        color = Color(Random.nextLong(0xFF000000, 0xFFFFFFFF)),
+                                        size = Random.nextInt(5, 15).toFloat(),
+                                        rotation = Random.nextInt(0, 360).toFloat(),
+                                        xVelocity = Random.nextInt(-10, 10).toFloat(),
+                                        yVelocity = Random.nextInt(-20, -5).toFloat()
+                                    )
+                                )
+                            }
+                            delay(2000) // Confeti visible durante 2 segundos
+                            lineTextOpacity = 0f // Desaparecer texto suavemente
+                            delay(500) // Espera un poco más antes de ocultar por completo
+
+                        }
+                        delay(2000)
+                        isCartroScaled = false
+                        showLineText = false
+                        //isScaled = false
+                        //isGlowing = false
+
+                    }
+                }
+
+                val scale by animateFloatAsState(
+                    targetValue = if (isScaled) 1.2f else 1f,
+                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 500)
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .graphicsLayer(scaleX = scale, scaleY = scale)
+                        .drawBehind {
+                            if (isGlowing) {
+                                drawRect(
+                                    color = Color.Yellow.copy(alpha = 0.3f),
+                                    size = size
+                                )
+                            }
+                        },
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    repeat(9) { columnIndex ->
+                        val index = rowIndex * 9 + columnIndex
+                        val number = numbers.getOrNull(index)
+                        val isSeleccionado = number != null && numerosSeleccionados.contains(number)
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1f)
+                                .background(
+                                    color = if (number == null) Color.Gray else columnColors[columnIndex % columnColors.size],
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .border(
+                                    androidx.compose.foundation.BorderStroke(2.dp, Color.Black),
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .clickable {
+                                    number?.let {
+                                        if (numerosSeleccionados.contains(it)) {
+                                            numerosSeleccionados.remove(it)
+                                        } else {
+                                            numerosSeleccionados.add(it)
+                                        }
                                     }
                                 }
-                            }
-                            .drawBehind {
-                                if (isSeleccionado) {
-                                    drawCircle(
-                                        color = Color.Black,
-                                        style = Stroke(width = 2.dp.toPx()),
-                                        radius = size.minDimension / 2 - 4.dp.toPx()
-                                    )
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = when {
-                                number == null -> "⭐" // Casillas vacías con estrella
-                                else -> number.toString() // Mostrar número
-                            },
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black
-                            ),
-                            textAlign = TextAlign.Center
-                        )
+                                .drawBehind {
+                                    if (isSeleccionado) {
+                                        drawCircle(
+                                            color = Color.Black,
+                                            style = Stroke(width = 2.dp.toPx()),
+                                            radius = size.minDimension / 2 - 4.dp.toPx()
+                                        )
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = when {
+                                    number == null -> "⭐"
+                                    else -> number.toString()
+                                },
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                ),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
         }
-    }
-    if (showLineText) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.3f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "LÍNIA!",
-                style = MaterialTheme.typography.displayLarge.copy(
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 40.sp
+        if (showLineText) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (estat == "Línia") "Línia" else "Quina",
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        color = Color.White.copy(alpha = lineTextOpacity),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 40.sp
+                    )
                 )
-            )
+            }
         }
     }
-
     ConfettiAnimation(confettiParticles)
 }
+
 
 data class ConfettiParticle(
     var x: Float,
@@ -2301,8 +2372,6 @@ fun ConfettiAnimation(particles: MutableList<ConfettiParticle>) {
         }
     }
 }
-
-
 
 @Composable
 fun GameOptionsDialog(onDismiss: () -> Unit, onOptionSelected: (String) -> Unit) {
