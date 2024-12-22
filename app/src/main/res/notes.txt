@@ -35,5 +35,4 @@
 - eliminar cartrons de dins la partida (des de visualitzacio de partida)
 
 
-
 - Anotar quants de quants numeros s'han dit i quans en falten a cada cartró
