@@ -165,7 +165,6 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
 
     val cartroEntities = remember { mutableStateOf<List<CartroEntity>>(emptyList()) }
 
-    // Controla la rotación de la lista de cartones
     var isRotated by remember { mutableStateOf(false) }
 
     LaunchedEffect(idsCartronsSeleccionats) {
@@ -208,14 +207,12 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                 )
 
                 IconButton(onClick = {
-                    // Cambiar el estado de rotación
                     isRotated = !isRotated
                 }) {
                     Icon(Icons.Default.Refresh, contentDescription = "Orientacio de cartrons")
                 }
             }
 
-            // Botón Quina/Línia
             Button(
                 onClick = {
                     gameMode = if (gameMode == "Quina") "Línia" else "Quina"
@@ -236,24 +233,22 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp)
             )
 
-            // Renderizar la lista de cartones
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = if (isRotated) 0.dp else 0.dp) // Padding horizontal cuando está rotado
+                    .padding(horizontal = if (isRotated) 0.dp else 0.dp)
                     .graphicsLayer {
                         rotationZ = if (isRotated) 90f else 0f
-                        // Ajustar el pivote para centrar la rotación
                         transformOrigin = TransformOrigin(0.5f, 0.5f)
                     },
                 contentPadding = PaddingValues(
-                    vertical = if (isRotated) 6.dp else 8.dp // Ajustar padding inicial si está rotado
+                    vertical = if (isRotated) 6.dp else 8.dp
                 ),
-                verticalArrangement = Arrangement.spacedBy(8.dp) // Reducido el espacio entre elementos
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (isRotated) {
                     item {
-                        Spacer(modifier = Modifier.height(100.dp)) // Espacio extra antes del primer cartón
+                        Spacer(modifier = Modifier.height(100.dp))
                     }
                 }
                 items(cartroEntities.value) { cartro ->
@@ -262,7 +257,7 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                             .background(Color.LightGray)
                             .padding(horizontal = 1.dp, vertical = 1.dp)
                             .aspectRatio(2f)
-                            .fillMaxSize(), // Ocupa todo el ancho disponible
+                            .fillMaxSize(),
                         contentAlignment = Alignment.Center
 
                     ) {
@@ -270,7 +265,7 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
 
                             modifier = Modifier
                                 .padding(4.dp)
-                                .fillMaxWidth(), // Reducido el padding del Column
+                                .fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -279,11 +274,11 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                             )
                             Cartro(
                                 modifier = Modifier
-                                    .padding(vertical = 4.dp), // Reducido el padding vertical
+                                    .padding(vertical = 4.dp),
                                 numbers = cartro.numeros,
                                 numerosSeleccionados = numerosSeleccionados,
                                 estat = gameMode,
-                                onGameModeChanged = { newGameMode -> // Handle the callback here
+                                onGameModeChanged = { newGameMode ->
                                     gameMode = newGameMode
                                 }
                             )
@@ -292,7 +287,7 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
                 }
                 if (isRotated) {
                     item {
-                        Spacer(modifier = Modifier.height(100.dp)) // Espacio extra antes del primer cartón
+                        Spacer(modifier = Modifier.height(100.dp))
                     }
                 }
             }
@@ -302,20 +297,19 @@ fun GameNoBolesIndividualScreen(navController: NavController, idsCartronsSelecci
 
 @Composable
 fun HomeScreen( navController: NavController) {
-    var showGameOptions by remember { mutableStateOf(false) } // Estat per mostrar el diàleg
-    var showPartidesOptions by remember { mutableStateOf(false) } // Estat per mostrar el diàleg
-    var individualsenseboles by remember { mutableStateOf(false) } // Estat per mostrar el diàleg
+    var showGameOptions by remember { mutableStateOf(false) }
+    var showPartidesOptions by remember { mutableStateOf(false) }
+    var individualsenseboles by remember { mutableStateOf(false) }
     var mostrarCrearCartroNou by remember { mutableStateOf(false) }
     var mostrarCarregarCartroExistent by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // Fons degradat modern
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFFBBDEFB), Color(0xFF2196F3)) // Gradient blau
+                    colors = listOf(Color(0xFFBBDEFB), Color(0xFF2196F3))
                 )
             ),
         contentAlignment = Alignment.Center
@@ -325,30 +319,10 @@ fun HomeScreen( navController: NavController) {
             verticalArrangement = Arrangement.spacedBy(24.dp),
             modifier = Modifier.padding(horizontal = 32.dp)
         ) {
-            // Nom de l'aplicació amb efecte
             Spacer(modifier = Modifier.height(20.dp))
-            /*Box(
-                modifier = Modifier
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(Color(0xFF00C6FF), Color(0xFF0072FF)) // Degradat blau
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .padding(horizontal = 24.dp, vertical = 8.dp) // Mida del fons
-            ) {
-                Text(
-                    text = "CartQuina",
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
-                    ),
-                    modifier = Modifier.shadow(8.dp, RoundedCornerShape(16.dp)) // Ombra al text
-                )
-            }*/
+
             AnimatedGradientText(text = "CartQuina")
             Spacer(modifier = Modifier.height(30.dp))
-            // Il·lustració d'un bingo o bola
             Icon(
                 painter = painterResource(id = R.drawable.baseline_star_24), // Requereix afegir la icona a res/drawable
                 contentDescription = "Bola de bingo",
@@ -360,9 +334,8 @@ fun HomeScreen( navController: NavController) {
                 tint = Color.White
             )
             Spacer(modifier = Modifier.height(20.dp))
-            // Botó "Jugar"
             Button(
-                onClick = { showGameOptions = true }, // Obre el diàleg
+                onClick = { showGameOptions = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp)
@@ -377,8 +350,6 @@ fun HomeScreen( navController: NavController) {
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }
-
-            // Botó "Configuració"
             OutlinedButton(
                 onClick = { navController.navigate("partides_guardades")},
                 modifier = Modifier
@@ -392,8 +363,6 @@ fun HomeScreen( navController: NavController) {
             ) {
                 Text(text = "Partides Guardades", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
             }
-
-            // Botó "Cartrons"
             OutlinedButton(
                 onClick = { navController.navigate("cartrons_guardats") },
                 modifier = Modifier
@@ -437,7 +406,6 @@ fun HomeScreen( navController: NavController) {
         OpcionsAfegirCartro (
             onDismiss = { individualsenseboles = false },
             onOptionSelected = { option ->
-                // Accions en seleccionar una opció
                 println("Opció seleccionada: $option")
 
                 if (option == "CREAR UN CARTRÓ NOU") {
@@ -461,42 +429,10 @@ fun HomeScreen( navController: NavController) {
 
     }
 
-    /*if (mostrarCrearCartroNou) {
-        AddCartroDialog(
-            onDismiss = { mostrarCrearCartroNou = false },
-            onSave = { numbers ->
-                scope.launch(Dispatchers.IO) {
-                    val cartro = CartroEntity(numeros = numbers)
-                    val newCartroId = database.cartroDao().insertCartro(cartro).toInt()
-
-                    withContext(Dispatchers.Main) {
-                        // Añadir el nuevo ID a la lista mutable
-                        cartronsPartidaId.add(newCartroId)
-
-                        // Actualizar la partida con los nuevos IDs de cartones
-                        partida?.let { currentPartida ->
-                            val updatedPartida = currentPartida.copy(cartronsAsignats = cartronsPartidaId.toList())
-                            scope.launch(Dispatchers.IO) {
-                                database.cartroDao().updatePartida(updatedPartida)
-                            }
-                        }
-
-                        // Actualizar la UI
-                        cartroList.add(cartro.numeros)
-                        mostrarCrearCartroNou = false
-                    }
-                }
-            }
-        )
-    }*/
-
-
-
     var selectedOption by remember { mutableStateOf<String?>(null) }
     val partidaViewModel: PartidaViewModel = viewModel()
     val partidas = remember { mutableStateListOf<PartidaEntity>() }
 
-    // Obtener partidas de la base de datos
     LaunchedEffect(Unit) {
         val database = DatabaseInstance.getDatabase(context)
         partidas.addAll(database.cartroDao().getAllPartides())
@@ -506,18 +442,13 @@ fun HomeScreen( navController: NavController) {
         PartidaOptionsDialog(
             onDismiss = { showPartidesOptions = false },
             onPartidaSelected = { partida ->
-                // Lógica para cargar la partida seleccionada
                 println("Cargar partida: ${partida.id}")
                 Log.d("AAAAAAAAAAAAAAdanlt",partida.id.toString())
-                //loadGameToScreen(partida, database, navController,partidaViewModel)
-                navController.navigate("game/${partida.id}") // Navegar al juego con el ID de la partida
+                navController.navigate("game/${partida.id}")
             },
             onCrearPartida = {
-                // Lógica para crear una nueva partida
                 println("Crear nueva partida")
                 createNewGame(navController, database)
-                //val partidanova = createNewGame(navController, database)
-               // navController.navigate("game/new")
             },
             partidas = partidas
         )
@@ -530,7 +461,6 @@ fun PartidaOptionsDialog(onDismiss: () -> Unit, onPartidaSelected: (PartidaEntit
         listOf(Color(0xFFBBDEFB), Color(0xFF2196F3)), // Gradient 1
         listOf(Color(0xFFE91E63), Color(0xFFFFC107)), // Gradient 2
         listOf(Color(0xFF4CAF50), Color(0xFF00BCD4)), // Gradient 3
-        // Add more gradient color pairs as needed
     )
 
     val gradientcol = listOf(Color(0xFFBBDEFB), Color(0xFF65B1EE),Color(0xFF2196F3),Color(0xFF65B1EE),Color(0xFFBBDEFB)) // Gradient 1
@@ -673,28 +603,24 @@ fun loadGameToScreen(partida: PartidaEntity,database: AppDatabase,navController:
 }
 
  fun createNewGame(navController: NavController, database: AppDatabase) {
-    // Crear un nuevo objeto de partida
-    val currentDateTime = LocalDateTime.now() // Obtiene la fecha y hora actual
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss") // Define el formato
-    val formattedDateTime = currentDateTime.format(formatter) // Convierte a string con el formato deseado
+    val currentDateTime = LocalDateTime.now()
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    val formattedDateTime = currentDateTime.format(formatter)
 
     val newPartida = PartidaEntity(
-        data = formattedDateTime, // Usa la fecha y hora formateada
-        numerosDit = listOf(), // Inicia sin números llamados
-        estat = "Línia", // Puede ser "linia" o "quines"
-        cartronsAsignats = listOf() // No asignamos cartones aún
+        data = formattedDateTime,
+        numerosDit = listOf(),
+        estat = "Línia",
+        cartronsAsignats = listOf()
     )
 
     Log.d("CREAR NOVA PARTIDA",newPartida.toString())
 
-
-         // Crear nueva partida
-         val executor = Executors.newSingleThreadExecutor()
+      val executor = Executors.newSingleThreadExecutor()
          executor.execute {
              val idpartida = database.cartroDao().insertPartida(newPartida)
              Log.d("CREAR NOVA PARTIDA ID", idpartida.toString())
 
-             // Navegar al nuevo juego después de crear la partida
              Handler(Looper.getMainLooper()).post {
                  navController.navigate("game/${idpartida}")
              }
@@ -707,30 +633,24 @@ fun PartidesGuardadesScreen(navController: NavController) {
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
 
-    // Cargar las partidas de la base de datos usando LaunchedEffect
     LaunchedEffect(Unit) {
         partides.value = database.cartroDao().getAllPartides()
     }
 
-    // Función para eliminar una partida y recargar la lista
     fun eliminarPartida(partida: PartidaEntity) {
         val executor = Executors.newSingleThreadExecutor()
         executor.execute {
             database.cartroDao().deletePartida(partida)
-            // Recargar la lista de partidas después de eliminar
-            // Lanzar una coroutine para cargar las partidas de nuevo
-            // Usamos LaunchedEffect para actualizar la UI de manera adecuada.
-            partides.value = database.cartroDao().getAllPartidesUn() // Esto también necesita estar dentro de un contexto suspendido
+            partides.value = database.cartroDao().getAllPartidesUn()
         }
     }
-
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFFBBDEFB), Color(0xFF2196F3)) // Gradient blau
+                    colors = listOf(Color(0xFFBBDEFB), Color(0xFF2196F3))
                 )
             ),
         contentAlignment = Alignment.TopCenter
@@ -743,15 +663,13 @@ fun PartidesGuardadesScreen(navController: NavController) {
                     .padding(16.dp)
                     .background(Color.White),
                 horizontalArrangement = Arrangement.Absolute.Left,
-                verticalAlignment = Alignment.CenterVertically // Alinear verticalment
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                //PER recular
                 IconButton(onClick = {
                     navController.navigate("home")
                 }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Menu")
                 }
-
 
                 Text(
                     text = "          Partides Guardades",
@@ -760,14 +678,13 @@ fun PartidesGuardadesScreen(navController: NavController) {
                 )
             }
 
-            // Pantalla con lista de partidas
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(partides.value) { partida ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 6.dp)
-                            .clip(RoundedCornerShape(16.dp)) // Vores arrodonides
+                            .clip(RoundedCornerShape(16.dp))
                             .background(
                                 Brush.horizontalGradient(
                                     listOf(
@@ -799,7 +716,6 @@ fun PartidesGuardadesScreen(navController: NavController) {
                                 .fillMaxSize()
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                // Datos de la partida
                                 Row (
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.Center
@@ -813,25 +729,21 @@ fun PartidesGuardadesScreen(navController: NavController) {
                                     )
                                 }
 
-
-                                // Línea debajo del título
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Divider(color = Color.Black, thickness = 1.dp)
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                // Fila con "Data" a la izquierda y su valor a la derecha
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    // Data
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             text = "Data: ",
                                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
-                                        Spacer(modifier = Modifier.width(8.dp)) // Espacio entre el texto y el valor
+                                        Spacer(modifier = Modifier.width(8.dp))
                                         Text(
                                             text = partida.data,
                                             style = MaterialTheme.typography.bodyMedium,
@@ -839,14 +751,13 @@ fun PartidesGuardadesScreen(navController: NavController) {
                                         )
                                     }
 
-                                    // Estat
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             text = "Estat: ",
                                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
-                                        Spacer(modifier = Modifier.width(8.dp)) // Espacio entre el texto y el valor
+                                        Spacer(modifier = Modifier.width(8.dp))
                                         Text(
                                             text = partida.estat,
                                             style = MaterialTheme.typography.bodyMedium,
@@ -856,9 +767,6 @@ fun PartidesGuardadesScreen(navController: NavController) {
                                 }
 
                                 Spacer(modifier = Modifier.height(4.dp))
-
-
-
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -875,7 +783,6 @@ fun PartidesGuardadesScreen(navController: NavController) {
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
-
 
                                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -895,7 +802,6 @@ fun PartidesGuardadesScreen(navController: NavController) {
                                     textAlign = TextAlign.Center
                                 )
 
-                                // Botón para eliminar la partida con un diseño atractivo
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 Row (
@@ -905,7 +811,7 @@ fun PartidesGuardadesScreen(navController: NavController) {
 
                                     IconButton(onClick = {     }){
                                         Icon(
-                                            imageVector = Icons.Filled.Info, // Icona d'eliminar
+                                            imageVector = Icons.Filled.Info,
                                             contentDescription = "Editar partida",
                                             tint = Color(0xFF2C5CA4)
                                         )
@@ -913,21 +819,12 @@ fun PartidesGuardadesScreen(navController: NavController) {
 
                                     IconButton(onClick = { eliminarPartida(partida) }) {
                                         Icon(
-                                            imageVector = Icons.Filled.Delete, // Icona d'eliminar
+                                            imageVector = Icons.Filled.Delete,
                                             contentDescription = "Eliminar partida",
                                             tint = Color(0xFFA1342D)
                                         )
                                     }
                                 }
-
-
-                                /*Button(
-                                    onClick = { eliminarPartida(partida) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                                ) {
-                                    Text(text = "Eliminar Partida", color = MaterialTheme.colorScheme.onError)
-                                }*/
                             }
                         }
 
@@ -1291,33 +1188,19 @@ fun CustomToast(message: String) {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
 @Composable
 fun GameScreen(navController: NavController, partida: PartidaEntity?) {
 
-    //var cartons = partida?.cartronsAsignats
     val cartronsPartidaId = remember {
         partida?.cartronsAsignats?.toMutableStateList() ?: mutableStateListOf()
     }
-
-    // val numerosSeleccionados = remember { mutableStateListOf<Int>() }
 
     val numerosSeleccionados = remember { partida?.numerosDit?.toMutableStateList() ?: mutableStateListOf<Int>()}
     var guardarPartida by remember { mutableStateOf(false) }
     var guardarPartidaToast by remember { mutableStateOf(false) }
 
-    var gameMode by remember { mutableStateOf(if (partida?.estat?.isEmpty() == true) {"Línia"} else {partida?.estat})} //posar estat de la partida
-    var expandedMenu by remember { mutableStateOf(false) }  // Controla l'obertura del menú
+    var gameMode by remember { mutableStateOf(if (partida?.estat?.isEmpty() == true) {"Línia"} else {partida?.estat})}
+    var expandedMenu by remember { mutableStateOf(false) }
     var showAddCartroDialog by remember { mutableStateOf(false) }
 
     var reiniciarPartida by remember { mutableStateOf(false) }
@@ -1325,7 +1208,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     var mostrarCarregarCartroExistent by remember { mutableStateOf(false) }
     var mostrarCrearCartroNou by remember { mutableStateOf(false) }
 
-    val scope = rememberCoroutineScope() // Per gestionar les corrutines
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
 
@@ -1333,12 +1216,11 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
 
     if (partida != null) {
         LaunchedEffect(partida.id) {
-            // Cargar los cartones de la base de datos
             val cartones = loadCartonesDePartida(partida.id, context)
             if (cartones != null) {
                 cartroList.clear()
                 cartroList.addAll(cartones)
-            }  // Agregar los cartones a la lista
+            }
         }
     }
 
@@ -1364,7 +1246,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 //PER recular
                 IconButton(onClick = {
                     guardarPartida=true
-                    //showSavedGameToast(context)
                     navController.navigate("home")
                 }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Menu")
@@ -1398,10 +1279,10 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                             )
                         }
 
-                        // Menú desplegable que apareix just sota del botó de menú
+                        // Menú desplegable
                         DropdownMenu(
                             expanded = expandedMenu,
-                            onDismissRequest = { expandedMenu = false },  // Tancar el menú
+                            onDismissRequest = { expandedMenu = false },
                             modifier = Modifier
                                 .background(Color.White, shape = RoundedCornerShape(8.dp))
                                 .padding(8.dp)
@@ -1412,7 +1293,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                                 onClick = {
                                     println("Afegir Cartro seleccionat")
                                     showAddCartroDialog = true
-                                    expandedMenu = false  // Tancar el menú després de seleccionar l'opció
+                                    expandedMenu = false
                                 },leadingIcon = {
                                     Icon(
                                         Icons.Outlined.Add,
@@ -1425,8 +1306,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                             DropdownMenuItem(
                                 text = {Text(text = "GUARDAR PARTIDA")},
                                 onClick = {
-                                    // Guardar la partida con los números seleccionados
-
                                     guardarPartida = true
                                     expandedMenu = false
                                 },
@@ -1480,7 +1359,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
             }
 
 
-
             //Boles
             Column(
                 modifier = Modifier
@@ -1502,10 +1380,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                                 numerosSeleccionados = numerosSeleccionados,
                                 onBallClicked = { selectedNumber ->
                                     if (numerosSeleccionados.contains(selectedNumber)) {
-                                        // Si el número ya está seleccionado, quitarlo de la lista
                                         numerosSeleccionados.remove(selectedNumber)
-
-                                        // Restaurar los números en los cartones
                                         for (cartro in cartroList) {
                                             cartro.forEachIndexed { index, numero ->
                                                 if (numero == -selectedNumber) {
@@ -1515,18 +1390,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                                             }
                                         }
                                     } else {
-                                        // Si no está seleccionado, añadirlo a la lista
                                         numerosSeleccionados.add(selectedNumber)
-
-                                        // Marcar el número como tachado en los cartones
-                                        /*for (cartro in cartroList) {
-                                            cartro.forEachIndexed { index, numero ->
-                                                if (numero == selectedNumber) {
-                                                    cartroList[cartroList.indexOf(cartro)] =
-                                                        cartro.toMutableList().apply { set(index, -numero!!) }
-                                                }
-                                            }
-                                        }*/
                                     }
                                 }
                             )
@@ -1540,44 +1404,37 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 1.dp),
-                contentAlignment = Alignment.Center // Centra el contenido dentro del Box
+                contentAlignment = Alignment.Center
             ) {
                 Button(
                     onClick = {
                         gameMode = if (gameMode == "Quina") "Línia" else "Quina"
                     },
                     modifier = Modifier
-                        .widthIn(min = 250.dp) // Ancho ajustable
-                        .height(48.dp), // Altura discreta
+                        .widthIn(min = 250.dp)
+                        .height(48.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE8EAEF), // Fondo suave
-                        contentColor = Color(0xFF374C60) // Texto en gris oscuro
+                        containerColor = Color(0xFFE8EAEF),
+                        contentColor = Color(0xFF374C60)
                     ),
-                    shape = RoundedCornerShape(8.dp), // Esquinas suaves
+                    shape = RoundedCornerShape(8.dp),
                     elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 0.dp, // Sin sombra para diseño plano
-                        pressedElevation = 2.dp // Pequeña elevación al presionar
+                        defaultElevation = 0.dp,
+                        pressedElevation = 2.dp
                     )
                 ) {
                     Text(
                         text = "Anem per $gameMode",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.Normal // Menos énfasis
+                            fontWeight = FontWeight.Normal
                         ),
                         textAlign = TextAlign.Center
                     )
                 }
             }
 
-
-
-
-
-
-            // Mostrar la lista de cartones
             if (cartroList.isEmpty()) {
-                // Si no hay cartones asignados, mostrar un mensaje
                 Text(
                     text = "No hi ha cartrons assignats. S'han d'afegir per a poder jugar.",
                     modifier = Modifier
@@ -1587,13 +1444,12 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                     textAlign = TextAlign.Center
                 )
             } else {
-                gameMode?.let { CartroList(cartroList = cartroList,numerosSeleccionados, it, onGameModeChanged = { newGameMode -> // Handle the callback here
+                gameMode?.let { CartroList(cartroList = cartroList,numerosSeleccionados, it, onGameModeChanged = { newGameMode ->
                     gameMode = newGameMode
-                }) } // Si hay cartones, mostrar la lista
+                }) }
             }
         }
     }
-
 
     if (guardarPartida) {
         partida?.let { currentPartida ->
@@ -1603,7 +1459,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 cartronsAsignats = cartronsPartidaId.toList()
             )
 
-            scope.launch(Dispatchers.IO) { // Assegura't d'usar Dispatcher.IO per a operacions de base de dades
+            scope.launch(Dispatchers.IO) {
                 try {
                     Log.d("GUARDAR", "Actualitzant partida amb ID: ${updatedPartida.id}")
                     Log.d("GUARDAR", "Números dits: ${numerosSeleccionados}")
@@ -1611,7 +1467,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                     Log.d("GUARDAR", "Cartrons assignats: ${currentPartida.cartronsAsignats}")
                     Log.d("GUARDAR", "Cartrons assignats updated: ${updatedPartida.cartronsAsignats}")
                     Log.d("GUARDAR", "Cartrons assignats cartolist: ${cartronsPartidaId}")
-
 
                     database.cartroDao().updatePartida(updatedPartida)
                     withContext(Dispatchers.Main) {
@@ -1628,19 +1483,16 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     if (guardarPartidaToast) {
         CustomToast(message = "Partida guardada correctament 🎉")
         LaunchedEffect(Unit) {
-            delay(3000) // Mostrar el Toast durante 2 segundos
+            delay(3000)
             guardarPartidaToast = false
         }
-
     }
 
     if (showAddCartroDialog) {
         OpcionsAfegirCartro (
             onDismiss = { showAddCartroDialog = false },
             onOptionSelected = { option ->
-                // Accions en seleccionar una opció
                 println("Opció seleccionada: $option")
-
                 if (option == "CREAR UN CARTRÓ NOU") {
                     mostrarCrearCartroNou = true
                 } else if (option == "CARREGAR UN CARTRÓ EXISTENT") {
@@ -1660,18 +1512,13 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                     val newCartroId = database.cartroDao().insertCartro(cartro).toInt()
 
                     withContext(Dispatchers.Main) {
-                        // Añadir el nuevo ID a la lista mutable
                         cartronsPartidaId.add(newCartroId)
-
-                        // Actualizar la partida con los nuevos IDs de cartones
                         partida?.let { currentPartida ->
                             val updatedPartida = currentPartida.copy(cartronsAsignats = cartronsPartidaId.toList())
                             scope.launch(Dispatchers.IO) {
                                 database.cartroDao().updatePartida(updatedPartida)
                             }
                         }
-
-                        // Actualizar la UI
                         cartroList.add(cartro.numeros)
                         mostrarCrearCartroNou = false
                     }
@@ -1702,21 +1549,14 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                     Log.d("NÚMEROS CARTRONS SELECCIONATS", numerosCartronsSeleccionats.toString())
 
                     withContext(Dispatchers.Main) {
-                        // Afegir els IDs seleccionats a cartronsPartidaId
                         cartronsPartidaId.addAll(idsCartronsSeleccionats)
-
-                        // Actualitzar la partida amb els nous IDs
                         partida?.let { currentPartida ->
                             val updatedPartida = currentPartida.copy(cartronsAsignats = cartronsPartidaId.toList())
                             scope.launch(Dispatchers.IO) {
                                 database.cartroDao().updatePartida(updatedPartida)
                             }
                         }
-
-                        // Afegir les llistes de números seleccionats a cartroList
                         cartroList.addAll(numerosCartronsSeleccionats)
-
-                        // Tanca el diàleg
                         mostrarCarregarCartroExistent = false
                     }
                 }
@@ -1739,20 +1579,14 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
 
 
 
-
-
-
-
-
 @Composable
 fun AddCartroExistentDialog(onDismiss: () -> Unit, onSave: (List<Int>, List<List<Int?>>) -> Unit) {
     val selectedCartros = remember { mutableStateOf(mutableSetOf<Int>()) }
-    val selectedNumbers = remember { mutableStateListOf<List<Int?>>() } // Llista de números seleccionats
+    val selectedNumbers = remember { mutableStateListOf<List<Int?>>() }
     val cartros = remember { mutableStateOf<List<CartroEntity>>(emptyList()) }
     val context = LocalContext.current
     val database = DatabaseInstance.getDatabase(context)
 
-    // Carreguem els cartrons de la base de dades
     LaunchedEffect(Unit) {
         cartros.value = database.cartroDao().getAllCartros()
     }
@@ -1884,18 +1718,6 @@ fun OpcionsAfegirCartro(onDismiss: () -> Unit, onOptionSelected: (String) -> Uni
                 ) {
                     Text("CARREGAR UN CARTRÓ EXISTENT")
                 }
-
-                // Opció 3:
-                /*TextButton(
-                    onClick = { onOptionSelected("MULTIPLE SENSE BOLES") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF64B5F6), shape = RoundedCornerShape(8.dp))
-                        .padding(vertical = 8.dp),
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
-                ) {
-                    Text("MULTIPLE SENSE BOLES")
-                }*/
             }
         },
         containerColor = Color.White,
@@ -1917,7 +1739,7 @@ fun CartroList(cartroList: List<List<Int?>>, numerosSeleccionados: MutableList<I
                 numbers = cartroNumbers,
                 numerosSeleccionados = numerosSeleccionados,
                 estat = gameMode,
-                onGameModeChanged = { newGameMode -> // Handle the callback here
+                onGameModeChanged = { newGameMode ->
                     onGameModeChanged(newGameMode)
                 }
             )
@@ -1927,10 +1749,9 @@ fun CartroList(cartroList: List<List<Int?>>, numerosSeleccionados: MutableList<I
 
 suspend fun loadCartonesDePartida(partidaId: Int, context: Context): List<List<Int?>>? {
     val database = DatabaseInstance.getDatabase(context)
-    val partida = database.cartroDao().getPartidaById(partidaId)  // Obtiene la partida por ID
+    val partida = database.cartroDao().getPartidaById(partidaId)
 
-    // Obtener los cartones asignados a esta partida
-    val cartonesAsignados = partida?.cartronsAsignats  // Lista de IDs de cartones asignados
+    val cartonesAsignados = partida?.cartronsAsignats
     val cartroList = cartonesAsignados?.map { cartroId ->
         database.cartroDao().getCartroById(cartroId)?.numeros ?: emptyList()
     }
@@ -1942,11 +1763,11 @@ suspend fun loadCartonesDePartida(partidaId: Int, context: Context): List<List<I
 fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit, cartro: List<Int?>? = null) {
 
     val columnColors = listOf(
-        Color(0xFFFFCDD2), // Rosa
-        Color(0xFFFFF59D), // Amarillo
-        Color(0xFFA5D6A7), // Verde
-        Color(0xFF90CAF9), // Azul
-        Color(0xFFCE93D8)  // Lila
+        Color(0xFFFFCDD2),
+        Color(0xFFFFF59D),
+        Color(0xFFA5D6A7),
+        Color(0xFF90CAF9),
+        Color(0xFFCE93D8)
     )
 
     //*************************************************************************************************************************************************
@@ -1970,7 +1791,6 @@ fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit, cartro: 
                 modifier = Modifier.padding(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                //cartro ns
                 Column(
                     modifier = Modifier
                         .background(Color.White, shape = RoundedCornerShape(8.dp))
@@ -2087,22 +1907,22 @@ fun Ball(ballNumber: Int, numerosSeleccionados: MutableList<Int>, onBallClicked:
         modifier = Modifier
             .size(32.dp)
             .background(
-                if (isSelected.value) Color.Black else Color(0xFFF5F5DC), // Fondo negro si está seleccionado
+                if (isSelected.value) Color.Black else Color(0xFFF5F5DC),
                 shape = RoundedCornerShape(50)
             )
             .border(
                 2.dp,
-                if (isSelected.value) Color.Gray else Color.Black, // Borde gris si está seleccionado
+                if (isSelected.value) Color.Gray else Color.Black,
                 shape = RoundedCornerShape(50)
             )
             .padding(6.dp)
-            .clickable { onBallClicked(ballNumber) }, // Llama a la función pasada
+            .clickable { onBallClicked(ballNumber) },
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = ballNumber.toString(),
             style = MaterialTheme.typography.bodyMedium.copy(
-                color = if (isSelected.value) Color.White else Color.Black, // Texto blanco si está seleccionado
+                color = if (isSelected.value) Color.White else Color.Black,
                 fontWeight = FontWeight.Bold
             )
         )
@@ -2128,7 +1948,7 @@ fun Cartro(modifier: Modifier = Modifier,numbers: List<Int?>,numerosSeleccionado
     val scope = rememberCoroutineScope()
     var showLineText by remember { mutableStateOf(false) }
     var lineTextOpacity by remember { mutableStateOf(1f) }
-    var isCartroScaled by remember { mutableStateOf(false) } // Per escalar el cartró
+    var isCartroScaled by remember { mutableStateOf(false) }
     val cartroScale by animateFloatAsState(
         targetValue = if (isCartroScaled) 1.2f else 1f,
         animationSpec = tween(durationMillis = 200, easing = LinearOutSlowInEasing)
@@ -2188,9 +2008,9 @@ fun Cartro(modifier: Modifier = Modifier,numbers: List<Int?>,numerosSeleccionado
                                     )
                                 )
                             }
-                            delay(2000) // Confeti visible durante 2 segundos
-                            lineTextOpacity = 0f // Desaparecer texto suavemente
-                            delay(500) // Espera un poco más antes de ocultar por completo
+                            delay(2000)
+                            lineTextOpacity = 0f
+                            delay(500)
                             showLineText = false
                         }
                         delay(2000)
@@ -2202,8 +2022,6 @@ fun Cartro(modifier: Modifier = Modifier,numbers: List<Int?>,numerosSeleccionado
 
                 LaunchedEffect(isAllComplete) {
                     if (isRowComplete && estat == "Quina") {
-                        //isScaled = true
-                       // isGlowing = true
                         isCartroScaled = true
                         showLineText = true
                         lineTextOpacity = 1f
@@ -2225,17 +2043,13 @@ fun Cartro(modifier: Modifier = Modifier,numbers: List<Int?>,numerosSeleccionado
                                     )
                                 )
                             }
-                            delay(2000) // Confeti visible durante 2 segundos
-                            lineTextOpacity = 0f // Desaparecer texto suavemente
-                            delay(500) // Espera un poco más antes de ocultar por completo
-
+                            delay(2000)
+                            lineTextOpacity = 0f
+                            delay(500)
                         }
                         delay(2000)
                         isCartroScaled = false
                         showLineText = false
-                        //isScaled = false
-                        //isGlowing = false
-
                     }
                 }
 
@@ -2353,14 +2167,13 @@ fun ConfettiAnimation(particles: MutableList<ConfettiParticle>) {
             scope.launch {
                 while (particles.isNotEmpty()) {
                     particles.forEach { particle ->
-                        // Actualizar posición y rotación inmediatamente
                         particle.x += particle.xVelocity
                         particle.y += particle.yVelocity
                         particle.rotation += 5f
-                        particle.yVelocity += 0.5f // Simula gravedad
+                        particle.yVelocity += 0.5f
                     }
-                    particles.removeAll { it.y > 1000f } // Elimina partículas fuera de la pantalla
-                    delay(16L) // Aproximadamente 60 FPS
+                    particles.removeAll { it.y > 1000f }
+                    delay(16L)
                 }
             }
         }
@@ -2369,7 +2182,6 @@ fun ConfettiAnimation(particles: MutableList<ConfettiParticle>) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         particles.forEach { particle ->
             with(particle) {
-                // Dibuja las partículas con su posición y tamaño actuales
                 drawCircle(
                     color = color,
                     radius = size,
@@ -2439,11 +2251,10 @@ fun GameOptionsDialog(onDismiss: () -> Unit, onOptionSelected: (String) -> Unit)
 
 @Composable
 fun AnimatedGradientText(text: String) {
-    // Animació infinita que canvia l'offset del gradient
     val infiniteTransition = rememberInfiniteTransition()
     val offsetX by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 300f, // Amplada del desplaçament
+        targetValue = 300f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 2000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
