@@ -844,16 +844,12 @@ fun CartroListScreen(navController: NavController) {
 
     var cartroToEdit: List<Int?>? by remember { mutableStateOf(null) }
 
-   // val cartroAEditar = C
-
     val cartroSeleccionat = remember { mutableStateOf<CartroEntity?>(null) }
 
     var cartroAEditar = remember { mutableStateOf<CartroEntity?>(null) }
-    //var cartroAEditar: List<Int?>? by remember { mutableStateOf(null) }
     var modificarcartro by remember { mutableStateOf(false) }
     var noucartro by remember { mutableStateOf(false) }
 
-    // Cargar los cartones
     LaunchedEffect(Unit) {
         cartros.value = database.cartroDao().getAllCartros()
     }
@@ -894,11 +890,6 @@ fun CartroListScreen(navController: NavController) {
 
                     database.cartroDao().updateCartro(cartroSeleccionat.value!!)
 
-
-
-
-                    //val cartro = CartroEntity(numeros = numbers)
-                    //val newCartroId: Int = database.cartroDao().insertCartronosuspend(cartro).toInt()
                     cartros.value = database.cartroDao().getAllCartrosUn()
                     modificarcartro = false
 
@@ -921,9 +912,7 @@ fun CartroListScreen(navController: NavController) {
             ),
         contentAlignment = Alignment.TopCenter
     ) {
-
         Column {
-
             //Header
             Row(
                 modifier = Modifier
@@ -938,14 +927,12 @@ fun CartroListScreen(navController: NavController) {
                 }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Menu")
                 }
-
                 Text(
                     text = "             Cartrons Guardats",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.W500),
                     color = Color.Black
                 )
             }
-
 
             Row (
                 modifier = Modifier
@@ -978,15 +965,13 @@ fun CartroListScreen(navController: NavController) {
                 }
             }
 
-
-            // Llista de cartrons
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(cartros.value) { cartro ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 6.dp)
-                            .clip(RoundedCornerShape(16.dp)) // Vores arrodonides
+                            .clip(RoundedCornerShape(16.dp))
                             .background(
                                 Brush.horizontalGradient(
                                     listOf(
@@ -1023,39 +1008,34 @@ fun CartroListScreen(navController: NavController) {
                                         .fillMaxWidth()
                                         .padding(horizontal = 6.dp, vertical = 8.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically // Centra verticalmente los elementos
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // Texto a la izquierda
                                     Text(
                                         text = "Cartró ${cartro.id}",
                                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                         color = Color(0xFF1f77be),
-                                        modifier = Modifier.weight(1f), // Hace que el texto ocupe el espacio disponible a la izquierda
+                                        modifier = Modifier.weight(1f),
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis // Manejo elegante si el texto es demasiado largo
+                                        overflow = TextOverflow.Ellipsis
                                     )
-
-                                    // Iconos a la derecha
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp), // Espacio entre iconos
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         IconButton(onClick = {
-                                            //cartroToEdit = cartro.numeros
                                             cartroSeleccionat.value = cartro
-                                            //cartroAEditar = cartro
                                             Log.d("CARTRO EDITAR",cartro.id.toString() + cartroSeleccionat.value!!.id.toString())
                                             modificarcartro = true
                                         }) {
                                             Icon(
-                                                imageVector = Icons.Filled.Edit, // Icono de editar
+                                                imageVector = Icons.Filled.Edit,
                                                 contentDescription = "Editar cartro",
                                                 tint = Color(0xFF1A9A20)
                                             )
                                         }
                                         IconButton(onClick = { eliminarCartro(cartro) }) {
                                             Icon(
-                                                imageVector = Icons.Filled.Delete, // Icono de eliminar
+                                                imageVector = Icons.Filled.Delete,
                                                 contentDescription = "Eliminar cartro",
                                                 tint = Color(0xFFA1342D)
                                             )
@@ -1063,8 +1043,6 @@ fun CartroListScreen(navController: NavController) {
                                     }
                                 }
 
-
-                                // Línea debajo del título
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Divider(color = Color.Black, thickness = 1.dp)
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -1076,7 +1054,6 @@ fun CartroListScreen(navController: NavController) {
                                     numbers = cartro.numeros
                                 )
 
-                                // Botón para eliminar la partida con un diseño atractivo
                                 Spacer(modifier = Modifier.height(16.dp))
                             }
                         }
@@ -1089,16 +1066,14 @@ fun CartroListScreen(navController: NavController) {
 
 @Composable
 fun VeureCartro(modifier: Modifier = Modifier, numbers: List<Int?>) {
-    // Colores de las columnas, basados en el bingo tradicional
     val columnColors = listOf(
-        Color(0xFFFFCDD2), // Rosa
-        Color(0xFFFFF59D), // Amarillo
-        Color(0xFFA5D6A7), // Verde
-        Color(0xFF90CAF9), // Azul
-        Color(0xFFCE93D8)  // Lila
+        Color(0xFFFFCDD2),
+        Color(0xFFFFF59D),
+        Color(0xFFA5D6A7),
+        Color(0xFF90CAF9),
+        Color(0xFFCE93D8)
     )
 
-    // Estructura del cartón
     Column(
         modifier = modifier
             .background(Color.White, shape = RoundedCornerShape(8.dp))
@@ -1106,14 +1081,14 @@ fun VeureCartro(modifier: Modifier = Modifier, numbers: List<Int?>) {
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        repeat(3) { rowIndex -> // 3 filas
+        repeat(3) { rowIndex ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                repeat(9) { columnIndex -> // 9 columnas
+                repeat(9) { columnIndex ->
                     val index = rowIndex * 9 + columnIndex
                     val number = numbers.getOrNull(index)
 
@@ -1155,9 +1130,9 @@ fun VeureCartro(modifier: Modifier = Modifier, numbers: List<Int?>) {
 fun CustomToast(message: String) {
     Box(
         modifier = Modifier
-            .fillMaxSize() // Ocupar toda la pantalla
+            .fillMaxSize()
             .padding(16.dp),
-        contentAlignment = Alignment.BottomCenter // Alinear el contenido en la parte inferior central
+        contentAlignment = Alignment.BottomCenter
     ) {
         Surface(
             shape = RoundedCornerShape(8.dp),
