@@ -1163,6 +1163,8 @@ fun CustomToast(message: String) {
     }
 }
 
+//24/12/2024//
+
 @Composable
 fun GameScreen(navController: NavController, partida: PartidaEntity?) {
 
