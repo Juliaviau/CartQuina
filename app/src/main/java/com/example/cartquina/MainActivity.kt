@@ -1821,16 +1821,16 @@ fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit, cartro: 
 
                 val filledCount = cartroNumbers.count { it != null }
                 Text(
-                    text = "Números emplenats: $filledCount/2",
+                    text = "Números emplenats: $filledCount/15",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (filledCount == 2) Color.DarkGray else Color.Red
+                    color = if (filledCount == 15) Color.DarkGray else Color.Red
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = { onSave(cartroNumbers) },
-                enabled = cartroNumbers.count { it != null } == 2
+                enabled = cartroNumbers.count { it != null } == 15
             ) {
                 Text("Guardar")
             }
