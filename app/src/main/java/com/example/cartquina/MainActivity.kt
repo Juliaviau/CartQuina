@@ -60,9 +60,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
@@ -75,7 +78,13 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.isEmpty
+import androidx.compose.ui.graphics.PathSegment
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -83,8 +92,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.SemanticsProperties.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken
 import com.google.gson.Gson
@@ -100,6 +113,7 @@ import java.util.concurrent.Executors
 import kotlin.random.Random
 import kotlin.text.contains
 import kotlin.text.toFloat
+import kotlin.text.toIntOrNull
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -1228,7 +1242,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-          //  .background(Color(0xFF798083))
+            //  .background(Color(0xFF798083))
             .background(Color(0xFFC9DAE3))
             //.background(Color(0xFFFAFAFA))
     ) {
@@ -1240,7 +1254,9 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
 
             //header
             Row(
-                modifier = Modifier.fillMaxWidth().background(Color(0xFFE8EAEF)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFE8EAEF)),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically // Alinear verticalment
             ) {
@@ -1745,10 +1761,13 @@ suspend fun loadCartonesDePartida(partidaId: Int, context: Context): List<List<I
 
     return cartroList
 }
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit, cartro: List<Int?>? = null) {
-
+fun AddCartroDialog(
+    onDismiss: () -> Unit,
+    onSave: (List<Int?>) -> Unit,
+    cartro: List<Int?>? = null
+) {
     val columnColors = listOf(
         Color(0xFFFFCDD2),
         Color(0xFFFFF59D),
@@ -1757,7 +1776,6 @@ fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit, cartro: 
         Color(0xFFCE93D8)
     )
 
-    //*************************************************************************************************************************************************
     val cartroNumbers = remember {
         mutableStateListOf<Int?>().apply {
             if (cartro != null) {
@@ -1767,21 +1785,83 @@ fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit, cartro: 
             }
         }
     }
-    var showInputDialog by remember { mutableStateOf(false) }
+
     var selectedIndex by remember { mutableStateOf(-1) }
+    var showInputDialog by remember { mutableStateOf(false) }
+    var currentInput by remember { mutableStateOf("") }
+
+    // Show the input dialog when a cell is clicked
+    if (showInputDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showInputDialog = false
+                selectedIndex = -1
+            },
+            title = { Text("Introdueix un número", style = MaterialTheme.typography.titleLarge) },
+            text = {
+                OutlinedTextField(
+                    value = currentInput,
+                    onValueChange = { input ->
+                        if (input.isEmpty() || input.toIntOrNull() in 1..90) {
+                            currentInput = input
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number
+                    ),
+                    label = { Text("Número (1-90)", style = MaterialTheme.typography.bodySmall) },
+                    singleLine = true,
+                    trailingIcon = {
+                        IconButton(onClick = { currentInput = "" }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear")
+                        }
+                    },
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    )
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val number = currentInput.toIntOrNull()
+                    cartroNumbers[selectedIndex] = number
+                    showInputDialog = false
+                    selectedIndex = -1
+                    currentInput = ""
+                }) {
+                    Text("Ok")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showInputDialog = false
+                    selectedIndex = -1
+                    currentInput = ""
+                }) {
+                    Text("Cancel·lar")
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            tonalElevation = 4.dp
+        )
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Crea el teu cartró") },
+        title = { Text("Crea el teu cartró", style = MaterialTheme.typography.titleLarge) },
         text = {
             Column(
                 modifier = Modifier.padding(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Cartón
                 Column(
                     modifier = Modifier
-                        .background(Color.White, shape = RoundedCornerShape(8.dp))
-                        .border(BorderStroke(2.dp, Color.Black), shape = RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp))
+                        .border(BorderStroke(2.dp, MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(8.dp))
                         .padding(8.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -1800,26 +1880,28 @@ fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit, cartro: 
                                         .aspectRatio(1f)
                                         .background(
                                             color = if (cartroNumbers[index] != null) columnColors[columnIndex % columnColors.size]
-                                            else Color.Gray,
+                                            else MaterialTheme.colorScheme.secondaryContainer,
                                             shape = RoundedCornerShape(4.dp)
                                         )
                                         .border(
-                                            BorderStroke(2.dp, Color.Black),
+                                            BorderStroke(
+                                                2.dp,
+                                                if (selectedIndex == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                            ),
                                             shape = RoundedCornerShape(4.dp)
                                         )
                                         .clickable {
                                             selectedIndex = index
+                                            currentInput = cartroNumbers[index]?.toString() ?: ""
                                             showInputDialog = true
                                         },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = cartroNumbers[index]?.toString() ?: "⭐",
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontSize = 16.sp,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
                                             fontWeight = FontWeight.Bold,
-                                            color =Color.Black,
-                                            textDecoration = TextDecoration.None
+                                            color = MaterialTheme.colorScheme.onSurface
                                         ),
                                         textAlign = TextAlign.Center
                                     )
@@ -1829,62 +1911,37 @@ fun AddCartroDialog(onDismiss: () -> Unit,onSave: (List<Int?>) -> Unit, cartro: 
                     }
                 }
 
+                // Números llenos
                 val filledCount = cartroNumbers.count { it != null }
                 Text(
                     text = "Números emplenats: $filledCount/15",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (filledCount == 15) Color.DarkGray else Color.Red
+                    color = if (filledCount == 15) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
             }
         },
         confirmButton = {
             Button(
-                onClick = { onSave(cartroNumbers) },
+                onClick = {
+                    onSave(cartroNumbers)
+                },
                 enabled = cartroNumbers.count { it != null } == 15
             ) {
                 Text("Guardar")
             }
         },
         dismissButton = {
-            Button(onClick = onDismiss) {
+            TextButton(onClick = onDismiss) {
                 Text("Cancel·lar")
             }
-        }
+        },
+        shape = RoundedCornerShape(16.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 4.dp
     )
-
-    if (showInputDialog) {
-        var input by remember { mutableStateOf("") }
-
-        AlertDialog(
-            onDismissRequest = { showInputDialog = false },
-            title = { Text("Escriu un número") },
-            text = {
-                OutlinedTextField(
-                    value = input,
-                    onValueChange = { input = it },
-                    label = { Text("Número (1-90)") },
-                    singleLine = true
-                )
-            },
-            confirmButton = {
-                Button(onClick = {
-                    val number = input.toIntOrNull()
-                    if (number != null && number in 1..90 && selectedIndex != -1) {
-                        cartroNumbers[selectedIndex] = number
-                    }
-                    showInputDialog = false
-                }) {
-                    Text("Escriure")
-                }
-            },
-            dismissButton = {
-                Button(onClick = { showInputDialog = false }) {
-                    Text("Cancel·lar")
-                }
-            }
-        )
-    }
 }
+
+
 
 @Composable
 fun Ball(ballNumber: Int, numerosSeleccionados: MutableList<Int>, onBallClicked: (Int) -> Unit) {

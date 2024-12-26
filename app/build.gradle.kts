@@ -96,7 +96,6 @@ dependencies {
 
     //implementation ("com.github.GrenderG:Toasty:1.5.2")
 
-
     // Lifecycle y ViewModel
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
