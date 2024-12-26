@@ -1,5 +1,6 @@
 package com.example.cartquina
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
@@ -392,8 +393,9 @@ fun HomeScreen( navController: NavController) {
                 if (option == "AMB BOLES") {
                     showPartidesOptions = true
                     //navController.navigate("game") // Navegar a la pantalla del joc
-                } else if (option == "INDIVIDUAL SENSE BOLES") {
+                } else if (option == "SENSE BOLES") {
                     individualsenseboles = true
+                    Log.d("Individual sense boles", "individualsenseboles = true")
                 }
                 showGameOptions = false
             }
@@ -410,10 +412,31 @@ fun HomeScreen( navController: NavController) {
 
                 if (option == "CREAR UN CARTRÓ NOU") {
                     mostrarCrearCartroNou = true
+                    Log.d("Individual sense boles", "pitxat crear cartro nou")
                 } else if (option == "CARREGAR UN CARTRÓ EXISTENT") {
                     mostrarCarregarCartroExistent = true
+                    Log.d("Individual sense boles", "pitxat carregar un cartro existent")
                 }
                 individualsenseboles = false
+            }
+        )
+    }
+
+    if (mostrarCrearCartroNou) {
+        AddCartroDialog(
+            onDismiss = { mostrarCrearCartroNou = false },
+            onSave = { numbers ->
+                scope.launch(Dispatchers.IO) {
+                    val cartro = CartroEntity(numeros = numbers)
+                    val newCartroId = database.cartroDao().insertCartro(cartro).toInt()
+                    val idsJson = Gson().toJson(listOf(newCartroId))
+                    System.out.println("Ids JSON: $idsJson + ${listOf(newCartroId)}")
+                    // Switch to the main thread before navigating
+                    withContext(Dispatchers.Main) {
+                        navController.navigate("gameNoBolesIdividual/$idsJson")
+                        mostrarCrearCartroNou = false
+                    }
+                }
             }
         )
     }
@@ -423,10 +446,10 @@ fun HomeScreen( navController: NavController) {
             onDismiss = { mostrarCarregarCartroExistent = false },
             onSave = { idsCartronsSeleccionats, numerosCartronsSeleccionats ->
                 val idsJson = Gson().toJson(idsCartronsSeleccionats)
+                System.out.println("Ids JSON: $idsJson ")
                 navController.navigate("gameNoBolesIdividual/$idsJson")
             }
         )
-
     }
 
     var selectedOption by remember { mutableStateOf<String?>(null) }
@@ -602,6 +625,7 @@ fun loadGameToScreen(partida: PartidaEntity,database: AppDatabase,navController:
     navController.navigate("game")
 }
 
+ @SuppressLint("SuspiciousIndentation")
  fun createNewGame(navController: NavController, database: AppDatabase) {
     val currentDateTime = LocalDateTime.now()
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
@@ -1542,20 +1566,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @Composable
 fun AddCartroExistentDialog(onDismiss: () -> Unit, onSave: (List<Int>, List<List<Int?>>) -> Unit) {
     val selectedCartros = remember { mutableStateOf(mutableSetOf<Int>()) }
@@ -2198,7 +2208,7 @@ fun GameOptionsDialog(onDismiss: () -> Unit, onOptionSelected: (String) -> Unit)
 
                 // Opció 2: INDIVIDUAL SENSE BOLES
                 TextButton(
-                    onClick = { onOptionSelected("INDIVIDUAL SENSE BOLES") },
+                    onClick = { onOptionSelected("SENSE BOLES") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xFF90CAF9), shape = RoundedCornerShape(8.dp))
@@ -2209,7 +2219,7 @@ fun GameOptionsDialog(onDismiss: () -> Unit, onOptionSelected: (String) -> Unit)
                 }
 
                 // Opció 3: MULTIPLE SENSE BOLES
-                TextButton(
+                /*TextButton(
                     onClick = { onOptionSelected("MULTIPLE SENSE BOLES") },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2218,7 +2228,7 @@ fun GameOptionsDialog(onDismiss: () -> Unit, onOptionSelected: (String) -> Unit)
                     colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
                 ) {
                     Text("MULTIPLE SENSE BOLES")
-                }
+                }*/
             }
         },
         containerColor = Color.White,

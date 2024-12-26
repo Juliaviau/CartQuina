@@ -36,3 +36,8 @@
 
 
 - Anotar quants de quants numeros s'han dit i quans en falten a cada cartró
+
+
+- poder eliminar cartrons de partida
+- veure quants numeros s'han cantat
+- canviar el afegir numeros als cartrons
