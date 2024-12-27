@@ -1415,6 +1415,9 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text("Quantitat de números dits: ${numerosSeleccionados.size}")
+            Spacer(modifier = Modifier.height(6.dp))
 
             // Botó Quina/Línia
             Box(
