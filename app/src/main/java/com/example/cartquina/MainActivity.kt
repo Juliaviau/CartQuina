@@ -1375,7 +1375,6 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                 }
             }
 
-
             //Boles
             Column(
                 modifier = Modifier
