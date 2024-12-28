@@ -11,11 +11,7 @@ import java.io.Serial
 @Entity(tableName = "cartrons")
 data class CartroEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-
     @SerialName("numbers")
-    val numeros: List<Int?> = emptyList(),/*, // Llista dels 27 números o nulls
-
-    @SerialName("data")
-    val data: String? = null*/
+    val numeros: List<Int?> = emptyList(),
 )
 const val tableName = "CartroEntity"

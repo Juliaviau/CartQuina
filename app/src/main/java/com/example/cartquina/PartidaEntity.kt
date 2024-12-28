@@ -8,8 +8,8 @@ import kotlinx.serialization.Serializable
 @Entity(tableName = "partides")
 data class PartidaEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val data: String, // Fecha de la partida
-    val numerosDit: List<Int> = listOf(), // Números llamados
-    val estat: String, // Puede ser "quines" o "linia"
-    val cartronsAsignats: List<Int> = listOf() // Lista de IDs de los cartones asignados a la partida
+    val data: String,
+    val numerosDit: List<Int> = listOf(),
+    val estat: String,
+    val cartronsAsignats: List<Int> = listOf()
 )

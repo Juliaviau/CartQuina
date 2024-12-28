@@ -8,6 +8,6 @@ import kotlinx.serialization.Serializable
 @Entity(tableName = "cartro_estat")
 data class CartroEstatEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val cartroId: Int, // ID del cartón
-    val numerusTachats: List<Int> = listOf() // Lista de números tachados en ese cartón
+    val cartroId: Int,
+    val numerusTachats: List<Int> = listOf()
 )

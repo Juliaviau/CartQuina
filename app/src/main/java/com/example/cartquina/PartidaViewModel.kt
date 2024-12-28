@@ -10,9 +10,8 @@ class PartidaViewModel : ViewModel() {
     var cartones: List<CartroEstatEntity> by mutableStateOf(emptyList())
     var numerosLlamados: List<Int> by mutableStateOf(emptyList())
 
-    fun cargarPartida(partida: PartidaEntity,/* cartones: List<CartroEstatEntity?>,*/ numerosLlamados: List<Int>) {
+    fun cargarPartida(partida: PartidaEntity,numerosLlamados: List<Int>) {
         this.partida = partida
-       // this.cartones = cartones
         this.numerosLlamados = numerosLlamados
     }
 }

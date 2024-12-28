@@ -370,7 +370,7 @@ fun HomeScreen( navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp)
-                    .clip(RoundedCornerShape(50)), // Botó arrodonit
+                    .clip(RoundedCornerShape(50)),
                 border = BorderStroke(2.dp, Color.White),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = Color.White
@@ -383,7 +383,7 @@ fun HomeScreen( navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp)
-                    .clip(RoundedCornerShape(50)), // Botó arrodonit
+                    .clip(RoundedCornerShape(50)),
                 border = BorderStroke(2.dp, Color.White),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = Color.White
@@ -406,7 +406,6 @@ fun HomeScreen( navController: NavController) {
                 println("Opció seleccionada: $option")
                 if (option == "AMB BOLES") {
                     showPartidesOptions = true
-                    //navController.navigate("game") // Navegar a la pantalla del joc
                 } else if (option == "SENSE BOLES") {
                     individualsenseboles = true
                     Log.d("Individual sense boles", "individualsenseboles = true")
@@ -445,7 +444,6 @@ fun HomeScreen( navController: NavController) {
                     val newCartroId = database.cartroDao().insertCartro(cartro).toInt()
                     val idsJson = Gson().toJson(listOf(newCartroId))
                     System.out.println("Ids JSON: $idsJson + ${listOf(newCartroId)}")
-                    // Switch to the main thread before navigating
                     withContext(Dispatchers.Main) {
                         navController.navigate("gameNoBolesIdividual/$idsJson")
                         mostrarCrearCartroNou = false
@@ -495,9 +493,9 @@ fun HomeScreen( navController: NavController) {
 @Composable
 fun PartidaOptionsDialog(onDismiss: () -> Unit, onPartidaSelected: (PartidaEntity) -> Unit, onCrearPartida:   () -> Unit, partidas: List<PartidaEntity>) {
     val gradientColors = listOf(
-        listOf(Color(0xFFBBDEFB), Color(0xFF2196F3)), // Gradient 1
-        listOf(Color(0xFFE91E63), Color(0xFFFFC107)), // Gradient 2
-        listOf(Color(0xFF4CAF50), Color(0xFF00BCD4)), // Gradient 3
+        listOf(Color(0xFFBBDEFB), Color(0xFF2196F3)),
+        listOf(Color(0xFFE91E63), Color(0xFFFFC107)),
+        listOf(Color(0xFF4CAF50), Color(0xFF00BCD4)),
     )
 
     val gradientcol = listOf(Color(0xFFBBDEFB), Color(0xFF65B1EE),Color(0xFF2196F3),Color(0xFF65B1EE),Color(0xFFBBDEFB)) // Gradient 1
@@ -519,7 +517,7 @@ fun PartidaOptionsDialog(onDismiss: () -> Unit, onPartidaSelected: (PartidaEntit
             ) {
                 // Botó per crear nova partida amb "+" i contorn marcat
                 TextButton(
-                    onClick = { /*onCrearPartida()*/onCrearPartida() },
+                    onClick = { onCrearPartida() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.White, shape = RoundedCornerShape(8.dp))
@@ -556,7 +554,7 @@ fun PartidaOptionsDialog(onDismiss: () -> Unit, onPartidaSelected: (PartidaEntit
                     ) {
                         items(partidas) { partida ->
                                 val gradientIndex =
-                                    partidas.indexOf(partida) % gradientColors.size // Get index and cycle through colors
+                                    partidas.indexOf(partida) % gradientColors.size
                                 val currentGradientColors = gradientColors[gradientIndex]
 
                                 Card(
