@@ -1256,7 +1256,7 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                     .fillMaxWidth()
                     .background(Color(0xFFE8EAEF)),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically // Alinear verticalment
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 //PER recular
                 IconButton(onClick = {
@@ -1388,10 +1388,12 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                     ) {
                         for (columnIndex in 0 until 10) {
                             val ballNumber = rowIndex * 10 + columnIndex + 1
+                            val isOnCarton = cartroList.any { cartro -> cartro.contains(ballNumber) }
 
                             Ball(
                                 ballNumber = ballNumber,
                                 numerosSeleccionados = numerosSeleccionados,
+                                isOnCarton = isOnCarton, // Nuevo parámetro
                                 onBallClicked = { selectedNumber ->
                                     if (numerosSeleccionados.contains(selectedNumber)) {
                                         numerosSeleccionados.remove(selectedNumber)
@@ -1409,11 +1411,12 @@ fun GameScreen(navController: NavController, partida: PartidaEntity?) {
                                 }
                             )
                         }
+
                     }
                 }
             }
             Spacer(modifier = Modifier.height(6.dp))
-            Text("Quantitat de números dits: ${numerosSeleccionados.size}")
+            Text("Quantitat de números dits: ${numerosSeleccionados.size}         En queden ${90 - numerosSeleccionados.size}")
             Spacer(modifier = Modifier.height(6.dp))
 
             // Botó Quina/Línia
@@ -1942,21 +1945,34 @@ fun AddCartroDialog(
 }
 
 
-
 @Composable
-fun Ball(ballNumber: Int, numerosSeleccionados: MutableList<Int>, onBallClicked: (Int) -> Unit) {
+fun Ball(
+    ballNumber: Int,
+    numerosSeleccionados: MutableList<Int>,
+    isOnCarton: Boolean, // Nuevo parámetro
+    onBallClicked: (Int) -> Unit
+) {
     val isSelected = remember { derivedStateOf { numerosSeleccionados.contains(ballNumber) } }
 
     Box(
         modifier = Modifier
             .size(32.dp)
             .background(
-                if (isSelected.value) Color.Black else Color(0xFFF5F5DC),
+                when {
+                    isSelected.value -> Color.Black
+                    isOnCarton -> Color(0xFFF5F5DC) // Color especial para bolas en los cartones
+                    else -> Color(0xFFF5F5DC)
+                },
                 shape = RoundedCornerShape(50)
             )
             .border(
                 2.dp,
-                if (isSelected.value) Color.Gray else Color.Black,
+                when {
+                    isOnCarton -> Color(0xFFD736BF)
+                    isSelected.value -> Color.Gray
+
+                    else -> Color.Black
+                },
                 shape = RoundedCornerShape(50)
             )
             .padding(6.dp)
@@ -1966,7 +1982,11 @@ fun Ball(ballNumber: Int, numerosSeleccionados: MutableList<Int>, onBallClicked:
         Text(
             text = ballNumber.toString(),
             style = MaterialTheme.typography.bodyMedium.copy(
-                color = if (isSelected.value) Color.White else Color.Black,
+                color = when {
+                    isSelected.value -> Color.White
+                  //  isOnCarton -> Color.White
+                    else -> Color.Black
+                },
                 fontWeight = FontWeight.Bold
             )
         )
